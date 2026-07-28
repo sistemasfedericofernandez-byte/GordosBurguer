@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model MenuItem {
+  id       String  @id @default(cuid())
+  category String  @default("Otros")
+  name     String
+  price    Float
+  desc     String  @default("")
+  active   Boolean @default(true)
+
+  @@map("menu_items")
+}
+
+model Order {
+  id           String    @id @default(cuid())
+  num          Int
+  customerName String    @default("")
+  payment      String // efectivo | mercadopago | transferencia
+  delivery     String // mostrador | retira | envio
+  note         String    @default("")
+  status       String    @default("pendiente") // pendiente | completado
+  total        Float
+  items        Json
+  dateKey      String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  delivery_    Delivery?
+
+  @@map("orders")
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  description String
+  category    String   @default("Otros")
+  quantity    String   @default("")
+  supplier    String   @default("")
+  payment     String   @default("efectivo")
+  note        String   @default("")
+  amount      Float
+  dateKey     String
+  createdAt   DateTime @default(now())
+
+  @@map("expenses")
+}
+
+model Closure {
+  id       String   @id @default(cuid())
+  dateKey  String   @unique
+  closedAt DateTime @default(now())
+  closedBy String   @default("")
+  totals   Json
+
+  @@map("closures")
+}
+
+model Cadete {
+  id          String     @id @default(cuid())
+  name        String
+  phone       String     @default("")
+  active      Boolean    @default(true)
+  accessToken String     @unique @default(cuid())
+  deliveries  Delivery[]
+
+  @@map("cadetes")
+}
+
+model Delivery {
+  id           String    @id @default(cuid())
+  order        Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId      String    @unique
+  cadete       Cadete?   @relation(fields: [cadeteId], references: [id])
+  cadeteId     String?
+  address      String    @default("")
+  mapsUrl      String    @default("")
+  tariff       Float     @default(0)
+  status       String    @default("pendiente") // pendiente | en_camino | entregado
+  departedAt   DateTime?
+  deliveredAt  DateTime?
+  notes        String    @default("")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("deliveries")
+}
+
+model Setting {
+  key   String @id
+  value String
+
+  @@map("settings")
+}

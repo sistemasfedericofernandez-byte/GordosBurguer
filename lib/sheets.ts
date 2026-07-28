@@ -1,0 +1,235 @@
+import { google, sheets_v4 } from "googleapis";
+import { paymentLabel, deliveryLabel } from "@/lib/domain";
+
+const TABS = {
+  orders: { name: "Pedidos", header: ["ID", "Fecha", "Hora", "Numero", "Cliente", "Items", "Pago", "Entrega", "Nota", "Estado", "Total"] },
+  expenses: { name: "Insumos", header: ["ID", "Fecha", "Hora", "Descripcion", "Categoria", "Cantidad", "Proveedor", "Pago", "Nota", "Monto"] },
+  closures: { name: "Cierres", header: ["ID", "Fecha", "CerradoEl", "CerradoPor", "Total", "Efectivo", "MercadoPago", "Transferencia"] },
+  cadetes: { name: "Cadetes", header: ["ID", "Nombre", "Telefono", "Estado"] },
+  deliveries: { name: "Envios", header: ["ID", "Pedido", "Cadete", "Direccion", "Tarifa", "Estado", "Salio", "Entrego"] },
+} as const;
+
+type TabKey = keyof typeof TABS;
+
+let sheetsClientPromise: Promise<sheets_v4.Sheets> | null = null;
+const ensuredTabs = new Set<string>();
+
+function getSpreadsheetId(): string | null {
+  return process.env.GOOGLE_SHEET_ID || null;
+}
+
+function getSheetsClient(): Promise<sheets_v4.Sheets> {
+  if (!sheetsClientPromise) {
+    const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    const key = process.env.GOOGLE_PRIVATE_KEY;
+    if (!email || !key) throw new Error("Faltan credenciales de Google Sheets");
+    const auth = new google.auth.JWT({
+      email,
+      key: key.replace(/\\n/g, "\n"),
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
+    sheetsClientPromise = Promise.resolve(google.sheets({ version: "v4", auth }));
+  }
+  return sheetsClientPromise;
+}
+
+async function ensureTab(sheets: sheets_v4.Sheets, spreadsheetId: string, tab: TabKey): Promise<void> {
+  if (ensuredTabs.has(tab)) return;
+  const { name, header } = TABS[tab];
+  const meta = await sheets.spreadsheets.get({ spreadsheetId });
+  const exists = meta.data.sheets?.some((s) => s.properties?.title === name);
+  if (!exists) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: { requests: [{ addSheet: { properties: { title: name } } }] },
+    });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${name}!A1`,
+      valueInputOption: "RAW",
+      requestBody: { values: [header as unknown as string[]] },
+    });
+  }
+  ensuredTabs.add(tab);
+}
+
+async function findRowById(sheets: sheets_v4.Sheets, spreadsheetId: string, tabName: string, id: string): Promise<number | null> {
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId, range: `${tabName}!A:A` });
+  const rows = res.data.values || [];
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] === id) return i + 1; // 1-indexed sheet row
+  }
+  return null;
+}
+
+/** Escribe (alta o reemplazo) una fila identificada por id en la pestaña dada. Best-effort: nunca lanza. */
+export async function mirrorUpsert(tab: TabKey, id: string, row: (string | number)[]): Promise<void> {
+  const spreadsheetId = getSpreadsheetId();
+  if (!spreadsheetId) return;
+  try {
+    const sheets = await getSheetsClient();
+    await ensureTab(sheets, spreadsheetId, tab);
+    const { name } = TABS[tab];
+    const rowNum = await findRowById(sheets, spreadsheetId, name, id);
+    if (rowNum) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `${name}!A${rowNum}`,
+        valueInputOption: "RAW",
+        requestBody: { values: [row] },
+      });
+    } else {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId,
+        range: `${name}!A1`,
+        valueInputOption: "RAW",
+        insertDataOption: "INSERT_ROWS",
+        requestBody: { values: [row] },
+      });
+    }
+  } catch (err) {
+    console.error(`No se pudo espejar en Google Sheets (${tab}):`, err);
+  }
+}
+
+/** Marca una fila como eliminada (no la borra, para no perder historial). Best-effort. */
+export async function mirrorMarkDeleted(tab: TabKey, id: string, statusColumnIndex: number): Promise<void> {
+  const spreadsheetId = getSpreadsheetId();
+  if (!spreadsheetId) return;
+  try {
+    const sheets = await getSheetsClient();
+    await ensureTab(sheets, spreadsheetId, tab);
+    const { name } = TABS[tab];
+    const rowNum = await findRowById(sheets, spreadsheetId, name, id);
+    if (!rowNum) return;
+    const col = String.fromCharCode("A".charCodeAt(0) + statusColumnIndex);
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${name}!${col}${rowNum}`,
+      valueInputOption: "RAW",
+      requestBody: { values: [["Eliminado"]] },
+    });
+  } catch (err) {
+    console.error(`No se pudo marcar eliminado en Google Sheets (${tab}):`, err);
+  }
+}
+
+type OrderItemLike = { name: string; qty: number };
+type OrderLike = {
+  id: string;
+  dateKey: string;
+  createdAt: Date;
+  num: number;
+  customerName: string;
+  items: unknown;
+  payment: string;
+  delivery: string;
+  note: string;
+  status: string;
+  total: number;
+};
+
+export function mirrorOrder(o: OrderLike): void {
+  const items = Array.isArray(o.items) ? (o.items as OrderItemLike[]) : [];
+  void mirrorUpsert("orders", o.id, [
+    o.id,
+    o.dateKey,
+    new Date(o.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
+    o.num,
+    o.customerName || "",
+    items.map((it) => `${it.qty}x ${it.name}`).join(" | "),
+    paymentLabel(o.payment),
+    deliveryLabel(o.delivery),
+    o.note || "",
+    o.status,
+    o.total,
+  ]);
+}
+
+export function mirrorOrderDeleted(id: string): void {
+  void mirrorMarkDeleted("orders", id, 9);
+}
+
+type ExpenseLike = {
+  id: string;
+  dateKey: string;
+  createdAt: Date;
+  description: string;
+  category: string;
+  quantity: string;
+  supplier: string;
+  payment: string;
+  note: string;
+  amount: number;
+};
+
+export function mirrorExpense(e: ExpenseLike): void {
+  void mirrorUpsert("expenses", e.id, [
+    e.id,
+    e.dateKey,
+    new Date(e.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
+    e.description,
+    e.category,
+    e.quantity || "",
+    e.supplier || "",
+    paymentLabel(e.payment),
+    e.note || "",
+    e.amount,
+  ]);
+}
+
+export function mirrorExpenseDeleted(id: string): void {
+  void mirrorMarkDeleted("expenses", id, 8);
+}
+
+type ClosureLike = {
+  id: string;
+  dateKey: string;
+  closedAt: Date;
+  closedBy: string;
+  totals: unknown;
+};
+
+export function mirrorClosure(c: ClosureLike): void {
+  const t = (c.totals && typeof c.totals === "object" ? c.totals : {}) as Record<string, number>;
+  void mirrorUpsert("closures", c.id, [
+    c.id,
+    c.dateKey,
+    new Date(c.closedAt).toLocaleString("es-AR"),
+    c.closedBy || "",
+    t.total || 0,
+    t.efectivo || 0,
+    t.mercadopago || 0,
+    t.transferencia || 0,
+  ]);
+}
+
+type CadeteLike = { id: string; name: string; phone: string; active: boolean };
+
+export function mirrorCadete(c: CadeteLike): void {
+  void mirrorUpsert("cadetes", c.id, [c.id, c.name, c.phone || "", c.active ? "Activo" : "Inactivo"]);
+}
+
+type DeliveryLike = {
+  id: string;
+  order: { num: number };
+  cadete: { name: string } | null;
+  address: string;
+  tariff: number;
+  status: string;
+  departedAt: Date | null;
+  deliveredAt: Date | null;
+};
+
+export function mirrorDelivery(d: DeliveryLike): void {
+  void mirrorUpsert("deliveries", d.id, [
+    d.id,
+    d.order.num,
+    d.cadete?.name || "",
+    d.address || "",
+    d.tariff || 0,
+    d.status,
+    d.departedAt ? new Date(d.departedAt).toLocaleString("es-AR") : "",
+    d.deliveredAt ? new Date(d.deliveredAt).toLocaleString("es-AR") : "",
+  ]);
+}
