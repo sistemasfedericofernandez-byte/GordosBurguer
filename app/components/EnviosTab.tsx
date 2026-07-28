@@ -70,15 +70,17 @@ export default function EnviosTab({ deliveries, cadetes, reload }: { deliveries:
           ))}
         </div>
 
-        {cadetes.filter((c) => c.active).map((c) => (
-          <div className="card" key={c.id}>
-            <h2>{c.name} ({(byCadete[c.id] || []).length})</h2>
-            {(byCadete[c.id] || []).length === 0 && <p className="empty-note">Sin entregas activas.</p>}
-            {(byCadete[c.id] || []).map((d) => (
-              <DeliveryRow key={d.id} d={d} cadetes={cadetes} onAssign={assignCadete} />
-            ))}
-          </div>
-        ))}
+        {cadetes
+          .filter((c) => c.active || (byCadete[c.id] || []).length > 0)
+          .map((c) => (
+            <div className="card" key={c.id}>
+              <h2>{c.name}{!c.active && " (inactivo)"} ({(byCadete[c.id] || []).length})</h2>
+              {(byCadete[c.id] || []).length === 0 && <p className="empty-note">Sin entregas activas.</p>}
+              {(byCadete[c.id] || []).map((d) => (
+                <DeliveryRow key={d.id} d={d} cadetes={cadetes} onAssign={assignCadete} />
+              ))}
+            </div>
+          ))}
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
@@ -117,7 +119,7 @@ function DeliveryRow({ d, cadetes, onAssign }: { d: DeliveryInfo; cadetes: Cadet
       <div className="action-row">
         <select value={d.cadeteId || ""} onChange={(e) => onAssign(d.id, e.target.value)}>
           <option value="">Sin asignar</option>
-          {cadetes.filter((c) => c.active).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          {cadetes.filter((c) => c.active || c.id === d.cadeteId).map((c) => <option key={c.id} value={c.id}>{c.name}{!c.active ? " (inactivo)" : ""}</option>)}
         </select>
         {d.mapsUrl && (
           <a className="small-btn maps" href={d.mapsUrl} target="_blank" rel="noopener noreferrer">Abrir en Maps</a>

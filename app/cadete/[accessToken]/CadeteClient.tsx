@@ -21,6 +21,7 @@ export default function CadeteClient({ accessToken }: { accessToken: string }) {
   }, [accessToken]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial de datos al montar
     load();
     const id = setInterval(load, 15000);
     return () => clearInterval(id);

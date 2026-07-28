@@ -15,6 +15,7 @@ export default function CocinaPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial de datos al montar
     load();
     const id = setInterval(load, 8000);
     return () => clearInterval(id);
