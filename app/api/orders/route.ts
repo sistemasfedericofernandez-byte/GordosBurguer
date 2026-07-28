@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { todayKey, mapsUrlFor } from "@/lib/domain";
 import { mirrorOrder, mirrorDelivery } from "@/lib/sheets";
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  mirrorOrder(order);
+  after(() => mirrorOrder(order));
 
   if (order.delivery === "envio") {
     const address = body.address || "";
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       },
       include: { order: true, cadete: true },
     });
-    mirrorDelivery(deliveryRow);
+    after(() => mirrorDelivery(deliveryRow));
   }
 
   return NextResponse.json(order, { status: 201 });

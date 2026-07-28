@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { todayKey } from "@/lib/domain";
 import { mirrorExpense } from "@/lib/sheets";
@@ -26,6 +26,6 @@ export async function POST(request: NextRequest) {
       dateKey: todayKey(),
     },
   });
-  mirrorExpense(expense);
+  after(() => mirrorExpense(expense));
   return NextResponse.json(expense, { status: 201 });
 }

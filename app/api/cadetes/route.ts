@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { mirrorCadete } from "@/lib/sheets";
 
@@ -15,6 +15,6 @@ export async function POST(request: NextRequest) {
   const cadete = await prisma.cadete.create({
     data: { name: body.name.trim(), phone: body.phone || "" },
   });
-  mirrorCadete(cadete);
+  after(() => mirrorCadete(cadete));
   return NextResponse.json(cadete, { status: 201 });
 }

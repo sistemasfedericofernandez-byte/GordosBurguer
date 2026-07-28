@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { mapsUrlFor } from "@/lib/domain";
 import { mirrorDelivery } from "@/lib/sheets";
@@ -46,6 +46,6 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/cadete
     data,
     include: { order: true, cadete: true },
   });
-  mirrorDelivery(updated);
+  after(() => mirrorDelivery(updated));
   return NextResponse.json(updated);
 }

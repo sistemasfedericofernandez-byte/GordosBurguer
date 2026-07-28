@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { mirrorExpense, mirrorExpenseDeleted } from "@/lib/sheets";
 
@@ -14,13 +14,13 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/expens
   if (body.note !== undefined) data.note = body.note;
   if (body.amount !== undefined) data.amount = parseFloat(body.amount);
   const expense = await prisma.expense.update({ where: { id }, data });
-  mirrorExpense(expense);
+  after(() => mirrorExpense(expense));
   return NextResponse.json(expense);
 }
 
 export async function DELETE(_request: NextRequest, ctx: RouteContext<"/api/expenses/[id]">) {
   const { id } = await ctx.params;
   await prisma.expense.delete({ where: { id } });
-  mirrorExpenseDeleted(id);
+  after(() => mirrorExpenseDeleted(id));
   return NextResponse.json({ ok: true });
 }

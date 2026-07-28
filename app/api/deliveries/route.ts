@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { mapsUrlFor } from "@/lib/domain";
 import { mirrorDelivery } from "@/lib/sheets";
@@ -32,6 +32,6 @@ export async function POST(request: NextRequest) {
     },
     include: { order: true, cadete: true },
   });
-  mirrorDelivery(delivery);
+  after(() => mirrorDelivery(delivery));
   return NextResponse.json(delivery, { status: 201 });
 }

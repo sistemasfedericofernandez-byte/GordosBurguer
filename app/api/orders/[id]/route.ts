@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { mirrorOrder, mirrorOrderDeleted } from "@/lib/sheets";
 import { checkPin } from "@/lib/auth";
@@ -24,7 +24,7 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/orders
   if (body.note !== undefined) data.note = body.note;
 
   const order = await prisma.order.update({ where: { id }, data });
-  mirrorOrder(order);
+  after(() => mirrorOrder(order));
   return NextResponse.json(order);
 }
 
@@ -38,6 +38,6 @@ export async function DELETE(request: NextRequest, ctx: RouteContext<"/api/order
   if (!existing) return NextResponse.json({ error: "Pedido no encontrado." }, { status: 404 });
 
   await prisma.order.delete({ where: { id } });
-  mirrorOrderDeleted(id);
+  after(() => mirrorOrderDeleted(id));
   return NextResponse.json({ ok: true });
 }

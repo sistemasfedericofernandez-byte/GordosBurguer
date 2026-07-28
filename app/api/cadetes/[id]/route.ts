@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { mirrorCadete } from "@/lib/sheets";
 
@@ -10,7 +10,7 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/cadete
   if (body.phone !== undefined) data.phone = body.phone;
   if (body.active !== undefined) data.active = !!body.active;
   const cadete = await prisma.cadete.update({ where: { id }, data });
-  mirrorCadete(cadete);
+  after(() => mirrorCadete(cadete));
   return NextResponse.json(cadete);
 }
 
@@ -18,6 +18,6 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/cadete
 export async function DELETE(_request: NextRequest, ctx: RouteContext<"/api/cadetes/[id]">) {
   const { id } = await ctx.params;
   const cadete = await prisma.cadete.update({ where: { id }, data: { active: false } });
-  mirrorCadete(cadete);
+  after(() => mirrorCadete(cadete));
   return NextResponse.json({ ok: true });
 }

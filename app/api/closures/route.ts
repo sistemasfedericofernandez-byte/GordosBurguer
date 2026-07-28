@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { todayKey, emptyTotals, accumulate, emptyExpenseTotals, accumulateExpense } from "@/lib/domain";
 import { mirrorClosure } from "@/lib/sheets";
@@ -30,6 +30,6 @@ export async function POST(request: NextRequest) {
       totals: { ...totals, gastos: expenseTotals.total, efectivoNeto },
     },
   });
-  mirrorClosure(closure);
+  after(() => mirrorClosure(closure));
   return NextResponse.json(closure, { status: 201 });
 }

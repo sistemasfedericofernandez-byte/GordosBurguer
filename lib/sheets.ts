@@ -129,9 +129,9 @@ type OrderLike = {
   total: number;
 };
 
-export function mirrorOrder(o: OrderLike): void {
+export function mirrorOrder(o: OrderLike): Promise<void> {
   const items = Array.isArray(o.items) ? (o.items as OrderItemLike[]) : [];
-  void mirrorUpsert("orders", o.id, [
+  return mirrorUpsert("orders", o.id, [
     o.id,
     o.dateKey,
     new Date(o.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
@@ -146,8 +146,8 @@ export function mirrorOrder(o: OrderLike): void {
   ]);
 }
 
-export function mirrorOrderDeleted(id: string): void {
-  void mirrorMarkDeleted("orders", id, 9);
+export function mirrorOrderDeleted(id: string): Promise<void> {
+  return mirrorMarkDeleted("orders", id, 9);
 }
 
 type ExpenseLike = {
@@ -163,8 +163,8 @@ type ExpenseLike = {
   amount: number;
 };
 
-export function mirrorExpense(e: ExpenseLike): void {
-  void mirrorUpsert("expenses", e.id, [
+export function mirrorExpense(e: ExpenseLike): Promise<void> {
+  return mirrorUpsert("expenses", e.id, [
     e.id,
     e.dateKey,
     new Date(e.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
@@ -178,8 +178,8 @@ export function mirrorExpense(e: ExpenseLike): void {
   ]);
 }
 
-export function mirrorExpenseDeleted(id: string): void {
-  void mirrorMarkDeleted("expenses", id, 8);
+export function mirrorExpenseDeleted(id: string): Promise<void> {
+  return mirrorMarkDeleted("expenses", id, 8);
 }
 
 type ClosureLike = {
@@ -190,9 +190,9 @@ type ClosureLike = {
   totals: unknown;
 };
 
-export function mirrorClosure(c: ClosureLike): void {
+export function mirrorClosure(c: ClosureLike): Promise<void> {
   const t = (c.totals && typeof c.totals === "object" ? c.totals : {}) as Record<string, number>;
-  void mirrorUpsert("closures", c.id, [
+  return mirrorUpsert("closures", c.id, [
     c.id,
     c.dateKey,
     new Date(c.closedAt).toLocaleString("es-AR"),
@@ -206,8 +206,8 @@ export function mirrorClosure(c: ClosureLike): void {
 
 type CadeteLike = { id: string; name: string; phone: string; active: boolean };
 
-export function mirrorCadete(c: CadeteLike): void {
-  void mirrorUpsert("cadetes", c.id, [c.id, c.name, c.phone || "", c.active ? "Activo" : "Inactivo"]);
+export function mirrorCadete(c: CadeteLike): Promise<void> {
+  return mirrorUpsert("cadetes", c.id, [c.id, c.name, c.phone || "", c.active ? "Activo" : "Inactivo"]);
 }
 
 type DeliveryLike = {
@@ -221,8 +221,8 @@ type DeliveryLike = {
   deliveredAt: Date | null;
 };
 
-export function mirrorDelivery(d: DeliveryLike): void {
-  void mirrorUpsert("deliveries", d.id, [
+export function mirrorDelivery(d: DeliveryLike): Promise<void> {
+  return mirrorUpsert("deliveries", d.id, [
     d.id,
     d.order.num,
     d.cadete?.name || "",
