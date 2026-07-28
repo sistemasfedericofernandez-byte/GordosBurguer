@@ -16,6 +16,7 @@ export type DeliveryInfo = {
   address: string;
   mapsUrl: string;
   tariff: number;
+  tariffPaid: boolean;
   status: "pendiente" | "en_camino" | "entregado";
   departedAt: string | null;
   deliveredAt: string | null;
@@ -27,6 +28,7 @@ export type Order = {
   id: string;
   num: number;
   customerName: string;
+  customerPhone: string;
   payment: "efectivo" | "mercadopago" | "transferencia";
   delivery: "mostrador" | "retira" | "envio";
   note: string;

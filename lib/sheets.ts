@@ -2,11 +2,12 @@ import { google, sheets_v4 } from "googleapis";
 import { paymentLabel, deliveryLabel } from "@/lib/domain";
 
 const TABS = {
-  orders: { name: "Pedidos", header: ["ID", "Fecha", "Hora", "Numero", "Cliente", "Items", "Pago", "Entrega", "Nota", "Estado", "Total"] },
+  orders: { name: "Pedidos", header: ["ID", "Fecha", "Hora", "Numero", "Cliente", "Telefono", "Items", "Pago", "Entrega", "Nota", "Estado", "Total"] },
   expenses: { name: "Insumos", header: ["ID", "Fecha", "Hora", "Descripcion", "Categoria", "Cantidad", "Proveedor", "Pago", "Nota", "Monto"] },
   closures: { name: "Cierres", header: ["ID", "Fecha", "CerradoEl", "CerradoPor", "Total", "Efectivo", "MercadoPago", "Transferencia"] },
   cadetes: { name: "Cadetes", header: ["ID", "Nombre", "Telefono", "Estado"] },
-  deliveries: { name: "Envios", header: ["ID", "Pedido", "Cadete", "Direccion", "Tarifa", "Estado", "Salio", "Entrego"] },
+  deliveries: { name: "Envios", header: ["ID", "Pedido", "Cadete", "Direccion", "Tarifa", "EnvioPagado", "Estado", "Salio", "Entrego"] },
+  menu: { name: "Menu", header: ["ID", "Categoria", "Nombre", "Precio", "Descripcion", "Activo"] },
 } as const;
 
 type TabKey = keyof typeof TABS;
@@ -93,7 +94,7 @@ export async function mirrorUpsert(tab: TabKey, id: string, row: (string | numbe
 }
 
 /** Marca una fila como eliminada (no la borra, para no perder historial). Best-effort. */
-export async function mirrorMarkDeleted(tab: TabKey, id: string, statusColumnIndex: number): Promise<void> {
+export async function mirrorMarkDeleted(tab: TabKey, id: string, statusColumnIndex: number, value = "Eliminado"): Promise<void> {
   const spreadsheetId = getSpreadsheetId();
   if (!spreadsheetId) return;
   try {
@@ -107,7 +108,7 @@ export async function mirrorMarkDeleted(tab: TabKey, id: string, statusColumnInd
       spreadsheetId,
       range: `${name}!${col}${rowNum}`,
       valueInputOption: "RAW",
-      requestBody: { values: [["Eliminado"]] },
+      requestBody: { values: [[value]] },
     });
   } catch (err) {
     console.error(`No se pudo marcar eliminado en Google Sheets (${tab}):`, err);
@@ -121,6 +122,7 @@ type OrderLike = {
   createdAt: Date;
   num: number;
   customerName: string;
+  customerPhone: string;
   items: unknown;
   payment: string;
   delivery: string;
@@ -137,6 +139,7 @@ export function mirrorOrder(o: OrderLike): Promise<void> {
     new Date(o.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
     o.num,
     o.customerName || "",
+    o.customerPhone || "",
     items.map((it) => `${it.qty}x ${it.name}`).join(" | "),
     paymentLabel(o.payment),
     deliveryLabel(o.delivery),
@@ -147,7 +150,7 @@ export function mirrorOrder(o: OrderLike): Promise<void> {
 }
 
 export function mirrorOrderDeleted(id: string): Promise<void> {
-  return mirrorMarkDeleted("orders", id, 9);
+  return mirrorMarkDeleted("orders", id, 10);
 }
 
 type ExpenseLike = {
@@ -216,6 +219,7 @@ type DeliveryLike = {
   cadete: { name: string } | null;
   address: string;
   tariff: number;
+  tariffPaid: boolean;
   status: string;
   departedAt: Date | null;
   deliveredAt: Date | null;
@@ -228,8 +232,45 @@ export function mirrorDelivery(d: DeliveryLike): Promise<void> {
     d.cadete?.name || "",
     d.address || "",
     d.tariff || 0,
+    d.tariffPaid ? "Si" : "No",
     d.status,
     d.departedAt ? new Date(d.departedAt).toLocaleString("es-AR") : "",
     d.deliveredAt ? new Date(d.deliveredAt).toLocaleString("es-AR") : "",
   ]);
+}
+
+type MenuItemLike = { id: string; category: string; name: string; price: number; desc: string; active: boolean };
+
+export function mirrorMenuItem(m: MenuItemLike): Promise<void> {
+  return mirrorUpsert("menu", m.id, [m.id, m.category, m.name, m.price, m.desc || "", m.active ? "Si" : "No"]);
+}
+
+/**
+ * Lee el catálogo directamente de la hoja "Menu" (fuente de verdad para el menú:
+ * el dueño puede editar precios ahí y se reflejan solos en la app).
+ * Devuelve null si Sheets no está configurado o falla, para que el caller use Postgres como respaldo.
+ */
+export async function getMenuFromSheet(): Promise<MenuItemLike[] | null> {
+  const spreadsheetId = getSpreadsheetId();
+  if (!spreadsheetId) return null;
+  try {
+    const sheets = await getSheetsClient();
+    await ensureTab(sheets, spreadsheetId, "menu");
+    const { name } = TABS.menu;
+    const res = await sheets.spreadsheets.values.get({ spreadsheetId, range: `${name}!A2:F10000` });
+    const rows = res.data.values || [];
+    return rows
+      .filter((r) => r[2] && r[2].trim()) // debe tener nombre
+      .map((r) => ({
+        id: r[0] || `sheet-${r[2]}`,
+        category: r[1] || "Otros",
+        name: r[2],
+        price: parseFloat(r[3]) || 0,
+        desc: r[4] || "",
+        active: (r[5] || "Si").trim().toLowerCase() !== "no",
+      }));
+  } catch (err) {
+    console.error("No se pudo leer el menú desde Google Sheets:", err);
+    return null;
+  }
 }

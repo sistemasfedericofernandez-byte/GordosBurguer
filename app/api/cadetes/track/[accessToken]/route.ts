@@ -8,12 +8,20 @@ export async function GET(_request: NextRequest, ctx: RouteContext<"/api/cadetes
   const cadete = await prisma.cadete.findUnique({ where: { accessToken } });
   if (!cadete) return NextResponse.json({ error: "Link inválido." }, { status: 404 });
 
-  const deliveries = await prisma.delivery.findMany({
-    where: { cadeteId: cadete.id, status: { not: "entregado" } },
-    include: { order: true },
-    orderBy: { createdAt: "asc" },
-  });
-  return NextResponse.json({ cadete: { name: cadete.name }, deliveries });
+  const [deliveries, history] = await Promise.all([
+    prisma.delivery.findMany({
+      where: { cadeteId: cadete.id, status: { not: "entregado" } },
+      include: { order: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.delivery.findMany({
+      where: { cadeteId: cadete.id, status: "entregado" },
+      include: { order: true },
+      orderBy: { deliveredAt: "desc" },
+      take: 20,
+    }),
+  ]);
+  return NextResponse.json({ cadete: { name: cadete.name }, deliveries, history });
 }
 
 // El propio cadete carga/edita su dirección o marca "Salí" / "Entregué" para una de sus paradas.

@@ -14,6 +14,7 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/delive
     data.mapsUrl = mapsUrlFor(body.address);
   }
   if (body.tariff !== undefined) data.tariff = parseFloat(body.tariff);
+  if (body.tariffPaid !== undefined) data.tariffPaid = !!body.tariffPaid;
   if (body.notes !== undefined) data.notes = body.notes;
 
   if (body.action === "depart") {

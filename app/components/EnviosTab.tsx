@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Cadete, DeliveryInfo } from "@/lib/types";
-import { money } from "@/lib/domain";
+import { money, amountToCollect } from "@/lib/domain";
 
 const statusLabel: Record<string, string> = { pendiente: "Pendiente", en_camino: "En camino", entregado: "Entregado" };
 
@@ -107,12 +107,14 @@ export default function EnviosTab({ deliveries, cadetes, reload }: { deliveries:
 }
 
 function DeliveryRow({ d, cadetes, onAssign }: { d: DeliveryInfo; cadetes: Cadete[]; onAssign: (id: string, cadeteId: string) => void }) {
+  const collect = d.order ? amountToCollect(d.order, d) : null;
   return (
     <div className="order-row">
       <div className="order-top">
         <div>
           <div>Pedido #{d.order?.num} — {money(d.tariff)}</div>
           <div className="meta">{d.address || "Sin dirección cargada"}</div>
+          {collect && <div className="meta">{collect.amount > 0 ? `A cobrar: ${money(collect.amount)}` : "Ya pagado — solo entregar"}</div>}
         </div>
         <span className={d.status === "en_camino" ? "pending-tag" : "done-tag"}>{statusLabel[d.status]}</span>
       </div>

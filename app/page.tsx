@@ -68,7 +68,7 @@ export default function App() {
       <div className="topbar">
         <div className="brand">
           <div className="brand-text">
-            <span className="name">GORDO&apos;S</span>
+            <span className="name">Menú Porá</span>
             <span className="sub">Sistema de pedidos</span>
           </div>
         </div>

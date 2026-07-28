@@ -19,6 +19,7 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/orders
     data.total = items.reduce((s, it) => s + it.price * it.qty, 0);
   }
   if (body.customerName !== undefined) data.customerName = body.customerName;
+  if (body.customerPhone !== undefined) data.customerPhone = body.customerPhone;
   if (body.payment !== undefined) data.payment = body.payment;
   if (body.delivery !== undefined) data.delivery = body.delivery;
   if (body.note !== undefined) data.note = body.note;

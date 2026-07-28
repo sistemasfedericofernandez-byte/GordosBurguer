@@ -103,3 +103,40 @@ export function mapsUrlFor(address: string): string {
   if (!address.trim()) return "";
   return "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(address.trim());
 }
+
+function phoneDigits(phone: string): string {
+  return phone.replace(/\D/g, "");
+}
+
+export function telUrlFor(phone: string): string {
+  const d = phoneDigits(phone);
+  return d ? `tel:${d}` : "";
+}
+
+/** Heurística simple para Argentina: agrega 549 si no parece tener ya código de país. */
+export function whatsappUrlFor(phone: string): string {
+  let d = phoneDigits(phone);
+  if (!d) return "";
+  if (d.startsWith("54")) {
+    if (!d.startsWith("549")) d = "549" + d.slice(2);
+  } else {
+    d = "549" + d.replace(/^0/, "");
+  }
+  return `https://wa.me/${d}`;
+}
+
+export type CollectInfo = { label: string; amount: number };
+
+/** Qué debe cobrar el cadete al entregar, según cómo se pagó el pedido y si el envío ya está saldado. */
+export function amountToCollect(
+  order: { payment: string; total: number },
+  delivery: { tariff: number; tariffPaid: boolean }
+): CollectInfo {
+  if (order.payment === "efectivo") {
+    return { label: "Cobrar pedido + envío", amount: order.total + (delivery.tariff || 0) };
+  }
+  if (delivery.tariffPaid) {
+    return { label: "Ya está todo pagado — solo entregar", amount: 0 };
+  }
+  return { label: "Cobrar solo el envío", amount: delivery.tariff || 0 };
+}

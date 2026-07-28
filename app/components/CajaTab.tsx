@@ -11,12 +11,15 @@ export default function CajaTab({
 }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [payment, setPayment] = useState<"efectivo" | "mercadopago" | "transferencia">("efectivo");
   const [delivery, setDelivery] = useState<"mostrador" | "retira" | "envio">("mostrador");
   const [address, setAddress] = useState("");
   const [cadeteId, setCadeteId] = useState("");
   const [tariff, setTariff] = useState(String(settings.defaultTariff || 0));
+  const [tariffPaid, setTariffPaid] = useState(false);
   const [note, setNote] = useState("");
+  const [menuSearch, setMenuSearch] = useState("");
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [closerName, setCloserName] = useState("");
@@ -30,8 +33,12 @@ export default function CajaTab({
   const todayClosure = closures.find((c) => c.dateKey === today);
   const isClosed = !!todayClosure;
 
+  const q = menuSearch.trim().toLowerCase();
+  const filteredMenu = q
+    ? menu.filter((m) => m.name.toLowerCase().includes(q) || m.desc.toLowerCase().includes(q) || m.category.toLowerCase().includes(q))
+    : menu;
   const menuByCategory: Record<string, MenuItem[]> = {};
-  menu.forEach((m) => { (menuByCategory[m.category] ||= []).push(m); });
+  filteredMenu.forEach((m) => { (menuByCategory[m.category] ||= []).push(m); });
   const categories = Object.keys(menuByCategory).sort((a, b) => (a === "Burgers" ? -1 : b === "Burgers" ? 1 : a.localeCompare(b)));
 
   const addToCart = (item: MenuItem) => {
@@ -48,17 +55,18 @@ export default function CajaTab({
   const cartTotal = cart.reduce((s, c) => s + c.price * c.qty, 0);
 
   const resetForm = () => {
-    setCart([]); setCustomerName(""); setPayment("efectivo"); setDelivery("mostrador");
-    setAddress(""); setCadeteId(""); setTariff(String(settings.defaultTariff || 0));
+    setCart([]); setCustomerName(""); setCustomerPhone(""); setPayment("efectivo"); setDelivery("mostrador");
+    setAddress(""); setCadeteId(""); setTariff(String(settings.defaultTariff || 0)); setTariffPaid(false);
     setNote(""); setEditingOrderId(null);
   };
 
   const startEdit = (o: Order) => {
     setEditingOrderId(o.id);
     setCart(o.items.map((it) => ({ id: it.id, name: it.name, price: it.price, qty: it.qty })));
-    setCustomerName(o.customerName); setPayment(o.payment); setDelivery(o.delivery);
+    setCustomerName(o.customerName); setCustomerPhone(o.customerPhone || ""); setPayment(o.payment); setDelivery(o.delivery);
     setAddress(o.delivery_?.address || ""); setCadeteId(o.delivery_?.cadeteId || "");
     setTariff(String(o.delivery_?.tariff ?? settings.defaultTariff ?? 0));
+    setTariffPaid(!!o.delivery_?.tariffPaid);
     setNote(o.note);
   };
 
@@ -70,7 +78,7 @@ export default function CajaTab({
         await fetch(`/api/orders/${editingOrderId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: cart, customerName, payment, delivery, note }),
+          body: JSON.stringify({ items: cart, customerName, customerPhone, payment, delivery, note }),
         });
         if (delivery === "envio" && (address || cadeteId)) {
           const existingDeliveryId = orders.find((o) => o.id === editingOrderId)?.delivery_?.id;
@@ -78,13 +86,13 @@ export default function CajaTab({
             await fetch(`/api/deliveries/${existingDeliveryId}`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ address, cadeteId: cadeteId || null, tariff: parseFloat(tariff) || 0 }),
+              body: JSON.stringify({ address, cadeteId: cadeteId || null, tariff: parseFloat(tariff) || 0, tariffPaid }),
             });
           } else {
             await fetch(`/api/deliveries`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ orderId: editingOrderId, address, cadeteId: cadeteId || null, tariff: parseFloat(tariff) || 0 }),
+              body: JSON.stringify({ orderId: editingOrderId, address, cadeteId: cadeteId || null, tariff: parseFloat(tariff) || 0, tariffPaid }),
             });
           }
         }
@@ -92,7 +100,7 @@ export default function CajaTab({
         await fetch("/api/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: cart, customerName, payment, delivery, note, address, cadeteId: cadeteId || null, tariff: parseFloat(tariff) || 0 }),
+          body: JSON.stringify({ items: cart, customerName, customerPhone, payment, delivery, note, address, cadeteId: cadeteId || null, tariff: parseFloat(tariff) || 0, tariffPaid }),
         });
       }
       resetForm();
@@ -176,7 +184,9 @@ export default function CajaTab({
       <div className="caja-grid">
         <div className="card">
           <h2>Menú</h2>
+          <input type="text" placeholder="Buscar producto..." value={menuSearch} onChange={(e) => setMenuSearch(e.target.value)} style={{ marginBottom: 10 }} />
           {menu.length === 0 && <p className="empty-note">No hay productos. Agregalos en la pestaña Menú.</p>}
+          {menu.length > 0 && categories.length === 0 && <p className="empty-note">Sin resultados para &quot;{menuSearch}&quot;.</p>}
           {categories.map((cat) => (
             <div key={cat}>
               <div className="cat-label">{cat}</div>
@@ -197,6 +207,7 @@ export default function CajaTab({
         <div className="card">
           <h2>{editingOrderId ? "Editando pedido" : "Pedido nuevo"}</h2>
           <input type="text" placeholder="Nombre cliente (opcional)" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+          <input type="text" placeholder="Teléfono del cliente (opcional)" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} style={{ marginTop: 8 }} />
 
           <label className="field-label">Medio de pago</label>
           <div className="seg">
@@ -223,6 +234,12 @@ export default function CajaTab({
               </select>
               <label className="field-label">Tarifa de envío</label>
               <input type="number" value={tariff} onChange={(e) => setTariff(e.target.value)} />
+              {payment !== "efectivo" && (
+                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, fontSize: 12, color: "var(--muted)" }}>
+                  <input type="checkbox" checked={tariffPaid} onChange={(e) => setTariffPaid(e.target.checked)} style={{ width: "auto" }} />
+                  El envío también se pagó (el cadete no cobra nada)
+                </label>
+              )}
             </>
           )}
 
@@ -261,7 +278,7 @@ export default function CajaTab({
             <div className="order-row" key={o.id}>
               <div className="order-top">
                 <div>
-                  <div><strong>#{o.num}</strong>{o.customerName ? " · " + o.customerName : ""} — {money(o.total)}</div>
+                  <div><strong>#{o.num}</strong>{o.customerName ? " · " + o.customerName : ""}{o.customerPhone ? " · " + o.customerPhone : ""} — {money(o.total)}</div>
                   <div className="meta">
                     <span className={"badge " + o.payment}>{paymentLabel(o.payment)}</span>
                     <span className={"badge " + o.delivery}>{deliveryLabel(o.delivery)}</span>

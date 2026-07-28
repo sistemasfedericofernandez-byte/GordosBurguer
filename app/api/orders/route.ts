@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
       num,
       dateKey,
       customerName: body.customerName || "",
+      customerPhone: body.customerPhone || "",
       payment: body.payment || "efectivo",
       delivery: body.delivery || "mostrador",
       note: body.note || "",
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
         address,
         mapsUrl: mapsUrlFor(address),
         tariff,
+        tariffPaid: !!body.tariffPaid,
       },
       include: { order: true, cadete: true },
     });

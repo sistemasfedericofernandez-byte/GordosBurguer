@@ -15,11 +15,11 @@ function downloadCsv(filename: string, rows: unknown[][]) {
 }
 
 function orderRows(list: Order[]) {
-  const header = ["Fecha", "Hora", "Numero", "Cliente", "Items", "Pago", "Entrega", "Nota", "Estado", "Total"];
+  const header = ["Fecha", "Hora", "Numero", "Cliente", "Telefono", "Items", "Pago", "Entrega", "Nota", "Estado", "Total"];
   const rows = list.map((o) => [
     o.dateKey,
     new Date(o.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
-    o.num, o.customerName || "",
+    o.num, o.customerName || "", o.customerPhone || "",
     o.items.map((it) => `${it.qty}x ${it.name}`).join(" | "),
     paymentLabel(o.payment), deliveryLabel(o.delivery), o.note || "", o.status, o.total,
   ]);

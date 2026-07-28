@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
       address,
       mapsUrl: mapsUrlFor(address),
       tariff: typeof body.tariff === "number" ? body.tariff : await getDefaultTariff(),
+      tariffPaid: !!body.tariffPaid,
     },
     include: { order: true, cadete: true },
   });

@@ -1,7 +1,7 @@
 :root{
-  --bg:#161412; --panel:#221f1c; --paper:#f5efe2; --ink:#161412;
-  --mustard:#dba63c; --red:#c51817; --green:#5a8a5a; --blue:#4a7fb5; --purple:#9b7fc4;
-  --line:#3a3530; --muted:#a89c8a;
+  --bg:#171f1a; --panel:#212b24; --paper:#f5f1e6; --ink:#171f1a;
+  --mustard:#d98a3d; --red:#c0392b; --green:#4a9163; --blue:#3f8ea8; --purple:#8b6fc7;
+  --line:#37423a; --muted:#9aa79c;
 }
 *{box-sizing:border-box;padding:0;margin:0;}
 html,body{max-width:100vw;}
