@@ -9,6 +9,8 @@ import {
   checkActivationKey,
   getDefaultTariff,
   setDefaultTariff,
+  getBusinessInfo,
+  setBusinessInfo,
 } from "@/lib/auth";
 
 export async function GET() {
@@ -17,6 +19,7 @@ export async function GET() {
     expired: await isExpired(),
     trialDeadline: TRIAL_DEADLINE,
     defaultTariff: await getDefaultTariff(),
+    businessInfo: await getBusinessInfo(),
   });
 }
 
@@ -42,6 +45,11 @@ export async function PATCH(request: NextRequest) {
 
   if (body.defaultTariff !== undefined) {
     await setDefaultTariff(parseFloat(body.defaultTariff) || 0);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (body.businessInfo !== undefined) {
+    await setBusinessInfo(body.businessInfo);
     return NextResponse.json({ ok: true });
   }
 

@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type { Order, MenuItem, Expense, Closure, Cadete, DeliveryInfo, Settings } from "@/lib/types";
+import { money, amountToCollect } from "@/lib/domain";
+import { playBeep } from "@/lib/beep";
+import { printOrderTicket } from "@/lib/printer";
 import CajaTab from "@/app/components/CajaTab";
 import HistorialTab from "@/app/components/HistorialTab";
 import ComprasTab from "@/app/components/ComprasTab";
@@ -55,6 +58,51 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
+  const seenPendingIds = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    const poll = async () => {
+      const res = await fetch("/api/orders", { cache: "no-store" });
+      const fresh: Order[] = await res.json();
+      setOrders(fresh);
+      const pendingIds = new Set(fresh.filter((o) => o.source === "cliente" && o.confirmStatus === "pendiente").map((o) => o.id));
+      if (seenPendingIds.current === null) {
+        // primer poll: no suena por pedidos que ya estaban pendientes antes de abrir la pantalla
+        seenPendingIds.current = pendingIds;
+      } else {
+        const isNew = [...pendingIds].some((id) => !seenPendingIds.current!.has(id));
+        if (isNew) playBeep();
+        seenPendingIds.current = pendingIds;
+      }
+    };
+    const id = setInterval(poll, 10000);
+    return () => clearInterval(id);
+  }, []);
+
+  const confirmOrder = async (order: Order) => {
+    await fetch(`/api/orders/${order.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirmStatus: "confirmado" }),
+    });
+    const collect = order.delivery === "envio"
+      ? amountToCollect(order, { tariff: order.delivery_?.tariff || 0, tariffPaid: !!order.delivery_?.tariffPaid })
+      : null;
+    printOrderTicket({
+      num: order.num, customerName: order.customerName, customerPhone: order.customerPhone,
+      items: order.items, total: order.total, delivery: order.delivery, note: order.note, createdAt: order.createdAt,
+      collectLabel: collect?.label, collectAmount: collect?.amount,
+    });
+    await reloadAll();
+  };
+  const rejectOrder = async (orderId: string) => {
+    const reason = prompt("Motivo del rechazo (opcional):") || "";
+    await fetch(`/api/orders/${orderId}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirmStatus: "rechazado", rejectReason: reason }),
+    });
+    await reloadAll();
+  };
+  const pendingClientOrders = orders.filter((o) => o.source === "cliente" && o.confirmStatus === "pendiente");
+
   if (!loaded || !settings) {
     return <div className="loading">CARGANDO...</div>;
   }
@@ -82,6 +130,23 @@ export default function App() {
           <a className="tab" href="/cocina" target="_blank" rel="noopener noreferrer">Pantalla cocina ↗</a>
         </div>
       </div>
+
+      {pendingClientOrders.length > 0 && (
+        <div style={{ background: "var(--red)", padding: "10px 20px" }}>
+          {pendingClientOrders.map((o) => (
+            <div key={o.id} className="card" style={{ background: "var(--panel)", marginBottom: 8, maxWidth: 700, marginLeft: "auto", marginRight: "auto" }}>
+              <h2>🔔 Pedido nuevo del cliente #{o.num}</h2>
+              <div>{o.customerName}{o.customerPhone ? ` · ${o.customerPhone}` : ""} — {money(o.total)}</div>
+              <div className="meta" style={{ fontSize: 12, color: "var(--muted)" }}>{o.items.map((it) => `${it.qty}× ${it.name}`).join(", ")}</div>
+              {o.delivery === "envio" && <div className="meta" style={{ fontSize: 12 }}>Envío{o.delivery_?.address ? `: ${o.delivery_.address}` : ""}</div>}
+              <div className="action-row" style={{ marginTop: 10 }}>
+                <button className="small-btn done" onClick={() => confirmOrder(o)}>Confirmar</button>
+                <button className="small-btn del" onClick={() => rejectOrder(o.id)}>Rechazar</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <main>
         {view === "caja" && (

@@ -33,6 +33,8 @@ export type Order = {
   delivery: "mostrador" | "retira" | "envio";
   note: string;
   status: "pendiente" | "completado";
+  source: "staff" | "cliente";
+  confirmStatus: "pendiente" | "confirmado" | "rechazado";
   total: number;
   items: CartItem[];
   dateKey: string;
@@ -86,4 +88,5 @@ export type Settings = {
   expired: boolean;
   trialDeadline: number;
   defaultTariff: number;
+  businessInfo: string;
 };

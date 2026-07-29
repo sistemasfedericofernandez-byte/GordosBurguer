@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Settings } from "@/lib/types";
+import { connectPrinter, tryReconnectPrinter, isPrinterConnected } from "@/lib/printer";
 
 export default function ConfigTab({ settings, reload }: { settings: Settings; reload: () => Promise<void> }) {
   const [curPin, setCurPin] = useState("");
@@ -10,7 +11,22 @@ export default function ConfigTab({ settings, reload }: { settings: Settings; re
   const [pinMsg, setPinMsg] = useState("");
   const [tariff, setTariff] = useState(String(settings.defaultTariff || 0));
   const [tariffMsg, setTariffMsg] = useState("");
+  const [businessInfo, setBusinessInfo] = useState(settings.businessInfo || "");
+  const [businessInfoMsg, setBusinessInfoMsg] = useState("");
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [printerConnected, setPrinterConnected] = useState(false);
+  const [printerMsg, setPrinterMsg] = useState("");
   const sheetUrl = process.env.NEXT_PUBLIC_GOOGLE_SHEET_URL;
+
+  useEffect(() => {
+    tryReconnectPrinter().then((ok) => { if (ok) setPrinterConnected(true); });
+  }, []);
+
+  const handleConnectPrinter = async () => {
+    const ok = await connectPrinter();
+    setPrinterConnected(ok || isPrinterConnected());
+    setPrinterMsg(ok ? "Impresora conectada." : "No se pudo conectar la impresora.");
+  };
 
   const changePin = async () => {
     if (newPin !== confirmPin) { setPinMsg("La confirmación no coincide con el PIN nuevo."); return; }
@@ -31,6 +47,20 @@ export default function ConfigTab({ settings, reload }: { settings: Settings; re
     await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ defaultTariff: parseFloat(tariff) || 0 }) });
     setTariffMsg("Tarifa por defecto actualizada.");
     await reload();
+  };
+
+  const saveBusinessInfo = async () => {
+    await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ businessInfo }) });
+    setBusinessInfoMsg("Información guardada.");
+    await reload();
+  };
+
+  const copyOrderLink = () => {
+    const url = `${window.location.origin}/pedir`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 1500);
+    });
   };
 
   return (
@@ -61,6 +91,41 @@ export default function ConfigTab({ settings, reload }: { settings: Settings; re
         {!settings.activated && (
           <p className="empty-note">Vence el {new Date(settings.trialDeadline).toLocaleDateString("es-AR")}.</p>
         )}
+      </div>
+
+      <div className="card">
+        <h2>Página de pedidos para clientes</h2>
+        <p className="empty-note">
+          Mandale este link a los clientes por WhatsApp para que hagan su pedido directo (queda pendiente
+          de tu confirmación en la pestaña Caja).
+        </p>
+        <button className="export-btn" style={{ marginTop: 10 }} onClick={copyOrderLink}>
+          {copiedLink ? "¡Copiado!" : "Copiar link de pedidos"}
+        </button>
+      </div>
+
+      <div className="card">
+        <h2>Bot de WhatsApp</h2>
+        <p className="empty-note">
+          Responde automáticamente horarios, precios, etc. y manda el link de pedidos si el cliente quiere pedir.
+          Necesita que se carguen las variables de WhatsApp Business y Anthropic en Vercel (ver README) — mientras
+          tanto queda inactivo sin romper nada.
+        </p>
+        <label className="field-label">Información del negocio (horarios, dirección, medios de pago...)</label>
+        <textarea value={businessInfo} onChange={(e) => setBusinessInfo(e.target.value)} placeholder="Ej: Abrimos de miércoles a domingo de 20 a 00hs..." style={{ minHeight: 80 }} />
+        <button className="send-btn" style={{ marginTop: 10 }} onClick={saveBusinessInfo}>Guardar información</button>
+        {businessInfoMsg && <p className="order-note">{businessInfoMsg}</p>}
+      </div>
+
+      <div className="card">
+        <h2>Impresora de comandas (58mm)</h2>
+        <p className="empty-note">
+          Conectá la impresora térmica USB una sola vez desde esta pantalla (Chrome o Edge). Si no hay
+          impresora conectada, el ticket se imprime igual usando el diálogo de impresión del navegador.
+        </p>
+        <p className="order-note">{printerConnected ? "✅ Impresora conectada." : "Sin impresora conectada."}</p>
+        <button className="export-btn" style={{ marginTop: 10 }} onClick={handleConnectPrinter}>Conectar impresora</button>
+        {printerMsg && <p className="order-note">{printerMsg}</p>}
       </div>
 
       <div className="card">

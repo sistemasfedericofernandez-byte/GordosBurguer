@@ -2,7 +2,7 @@ import { google, sheets_v4 } from "googleapis";
 import { paymentLabel, deliveryLabel } from "@/lib/domain";
 
 const TABS = {
-  orders: { name: "Pedidos", header: ["ID", "Fecha", "Hora", "Numero", "Cliente", "Telefono", "Items", "Pago", "Entrega", "Nota", "Estado", "Total"] },
+  orders: { name: "Pedidos", header: ["ID", "Fecha", "Hora", "Numero", "Cliente", "Telefono", "Items", "Pago", "Entrega", "Nota", "Estado", "Total", "Origen", "Confirmacion"] },
   expenses: { name: "Insumos", header: ["ID", "Fecha", "Hora", "Descripcion", "Categoria", "Cantidad", "Proveedor", "Pago", "Nota", "Monto"] },
   closures: { name: "Cierres", header: ["ID", "Fecha", "CerradoEl", "CerradoPor", "Total", "Efectivo", "MercadoPago", "Transferencia"] },
   cadetes: { name: "Cadetes", header: ["ID", "Nombre", "Telefono", "Estado"] },
@@ -129,6 +129,8 @@ type OrderLike = {
   note: string;
   status: string;
   total: number;
+  source: string;
+  confirmStatus: string;
 };
 
 export function mirrorOrder(o: OrderLike): Promise<void> {
@@ -146,6 +148,8 @@ export function mirrorOrder(o: OrderLike): Promise<void> {
     o.note || "",
     o.status,
     o.total,
+    o.source === "cliente" ? "Cliente" : "Local",
+    o.confirmStatus,
   ]);
 }
 

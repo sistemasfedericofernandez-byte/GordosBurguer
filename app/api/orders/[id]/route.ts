@@ -13,6 +13,8 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/orders
 
   const data: Record<string, unknown> = {};
   if (body.status !== undefined) data.status = body.status;
+  if (body.confirmStatus !== undefined) data.confirmStatus = body.confirmStatus;
+  if (body.rejectReason !== undefined) data.note = existing.note ? `${existing.note}\nMotivo rechazo: ${body.rejectReason}` : `Motivo rechazo: ${body.rejectReason}`;
   if (body.items !== undefined) {
     const items: CartItem[] = body.items;
     data.items = items;

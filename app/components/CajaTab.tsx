@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import type { Order, MenuItem, Expense, Closure, Cadete, Settings, CartItem } from "@/lib/types";
-import { money, todayKey, emptyTotals, accumulate, paymentLabel, deliveryLabel } from "@/lib/domain";
+import { money, todayKey, emptyTotals, accumulate, paymentLabel, deliveryLabel, amountToCollect } from "@/lib/domain";
+import { printOrderTicket } from "@/lib/printer";
 
 export default function CajaTab({
   orders, menu, closures, cadetes, settings, reload,
@@ -28,7 +29,7 @@ export default function CajaTab({
   const [pinError, setPinError] = useState("");
 
   const today = todayKey();
-  const todayOrders = orders.filter((o) => o.dateKey === today).sort((a, b) => b.num - a.num);
+  const todayOrders = orders.filter((o) => o.dateKey === today && o.confirmStatus === "confirmado").sort((a, b) => b.num - a.num);
   const todayTotals = todayOrders.reduce(accumulate, emptyTotals());
   const todayClosure = closures.find((c) => c.dateKey === today);
   const isClosed = !!todayClosure;
@@ -97,10 +98,17 @@ export default function CajaTab({
           }
         }
       } else {
-        await fetch("/api/orders", {
+        const res = await fetch("/api/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ items: cart, customerName, customerPhone, payment, delivery, note, address, cadeteId: cadeteId || null, tariff: parseFloat(tariff) || 0, tariffPaid }),
+        });
+        const order = await res.json();
+        const collect = delivery === "envio" ? amountToCollect({ payment, total: cartTotal }, { tariff: parseFloat(tariff) || 0, tariffPaid }) : null;
+        printOrderTicket({
+          num: order.num, customerName, customerPhone, items: cart, total: cartTotal,
+          delivery, note, createdAt: order.createdAt,
+          collectLabel: collect?.label, collectAmount: collect?.amount,
         });
       }
       resetForm();

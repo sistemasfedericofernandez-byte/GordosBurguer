@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
   const last = await prisma.order.findFirst({ orderBy: { num: "desc" } });
   const num = (last?.num || 0) + 1;
   const dateKey = todayKey();
+  const source = body.source === "cliente" ? "cliente" : "staff";
 
   const order = await prisma.order.create({
     data: {
@@ -35,6 +36,8 @@ export async function POST(request: NextRequest) {
       delivery: body.delivery || "mostrador",
       note: body.note || "",
       status: "pendiente",
+      source,
+      confirmStatus: source === "cliente" ? "pendiente" : "confirmado",
       total,
       items,
     },

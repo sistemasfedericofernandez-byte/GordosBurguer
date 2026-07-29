@@ -27,6 +27,8 @@ model Order {
   delivery     String // mostrador | retira | envio
   note         String    @default("")
   status       String    @default("pendiente") // pendiente | completado
+  source       String    @default("staff") // staff | cliente
+  confirmStatus String   @default("confirmado") // pendiente | confirmado | rechazado
   total        Float
   items        Json
   dateKey      String

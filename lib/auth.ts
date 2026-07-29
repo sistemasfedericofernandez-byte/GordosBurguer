@@ -66,3 +66,13 @@ export async function getDefaultTariff(): Promise<number> {
 export async function setDefaultTariff(value: number): Promise<void> {
   await setSetting("defaultTariff", String(value));
 }
+
+const DEFAULT_BUSINESS_INFO = "Horarios: consultar. Ubicación: consultar. Formas de pago: efectivo, Mercado Pago, transferencia.";
+
+export async function getBusinessInfo(): Promise<string> {
+  return (await getSetting("businessInfo")) ?? DEFAULT_BUSINESS_INFO;
+}
+
+export async function setBusinessInfo(value: string): Promise<void> {
+  await setSetting("businessInfo", value);
+}

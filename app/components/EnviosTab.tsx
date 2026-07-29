@@ -33,7 +33,7 @@ export default function EnviosTab({ deliveries, cadetes, reload }: { deliveries:
     });
   };
 
-  const active = deliveries.filter((d) => d.status !== "entregado");
+  const active = deliveries.filter((d) => d.status !== "entregado" && d.order?.confirmStatus === "confirmado");
   const done = deliveries.filter((d) => d.status === "entregado").slice(0, 30);
 
   const byCadete: Record<string, DeliveryInfo[]> = { sin_asignar: [] };

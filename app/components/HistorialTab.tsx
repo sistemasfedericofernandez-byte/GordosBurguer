@@ -26,10 +26,11 @@ function orderRows(list: Order[]) {
   return [header, ...rows];
 }
 
-export default function HistorialTab({ orders, expenses }: { orders: Order[]; expenses: Expense[]; closures: Closure[]; reload: () => Promise<void> }) {
+export default function HistorialTab({ orders: allOrders, expenses }: { orders: Order[]; expenses: Expense[]; closures: Closure[]; reload: () => Promise<void> }) {
   const [search, setSearch] = useState("");
   const [openDays, setOpenDays] = useState<Record<string, boolean>>({});
 
+  const orders = allOrders.filter((o) => o.confirmStatus === "confirmado");
   const allTimeTotals = orders.reduce(accumulate, emptyTotals());
 
   const byDate: Record<string, Order[]> = {};

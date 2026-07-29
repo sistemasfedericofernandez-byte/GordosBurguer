@@ -10,7 +10,7 @@ export default function CocinaPage() {
   const load = useCallback(async () => {
     const res = await fetch("/api/orders", { cache: "no-store" });
     const data: Order[] = await res.json();
-    setOrders(data.filter((o) => o.status === "pendiente").sort((a, b) => a.num - b.num));
+    setOrders(data.filter((o) => o.status === "pendiente" && o.confirmStatus === "confirmado").sort((a, b) => a.num - b.num));
     setLoaded(true);
   }, []);
 
