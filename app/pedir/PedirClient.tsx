@@ -198,12 +198,14 @@ export default function PedirClient() {
 
       {categories.length > 1 && (
         <div className="pedir-catnav">
-          {categories.map((cat) => (
-            <button key={cat} className={effectiveActiveCat === cat ? "active" : ""} onClick={() => scrollToCategory(cat)}>
-              <span className="icon">{categoryEmoji(cat)}</span>
-              {cat}
-            </button>
-          ))}
+          <div className="pedir-catnav-inner">
+            {categories.map((cat) => (
+              <button key={cat} className={effectiveActiveCat === cat ? "active" : ""} onClick={() => scrollToCategory(cat)}>
+                <span className="icon">{categoryEmoji(cat)}</span>
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
