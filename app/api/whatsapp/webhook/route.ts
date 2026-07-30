@@ -2,6 +2,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { getBusinessInfo } from "@/lib/auth";
 import { generateBotReply } from "@/lib/claudeBot";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { getActiveMenu } from "@/lib/menu";
 
 // Handshake de verificación que pide Meta al configurar el webhook.
 export async function GET(request: NextRequest) {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
 
 async function handleIncomingMessage(from: string, text: string): Promise<void> {
   const origin = process.env.NEXT_PUBLIC_SITE_URL || "https://menu-pora.vercel.app";
-  const businessInfo = await getBusinessInfo();
-  const reply = await generateBotReply(text, businessInfo, `${origin}/pedir`);
+  const [businessInfo, menu] = await Promise.all([getBusinessInfo(), getActiveMenu()]);
+  const reply = await generateBotReply(text, businessInfo, `${origin}/pedir`, menu);
   await sendWhatsAppMessage(from, reply);
 }

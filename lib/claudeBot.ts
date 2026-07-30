@@ -1,4 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
+import type { MenuItem } from "@/lib/types";
+import { money } from "@/lib/domain";
 
 let client: Anthropic | null = null;
 function getClient(): Anthropic | null {
@@ -8,11 +10,34 @@ function getClient(): Anthropic | null {
   return client;
 }
 
+function formatCatalog(menu: MenuItem[]): string {
+  if (menu.length === 0) return "(sin productos cargados)";
+  const byCategory = new Map<string, MenuItem[]>();
+  for (const item of menu) {
+    const list = byCategory.get(item.category) || [];
+    list.push(item);
+    byCategory.set(item.category, list);
+  }
+  const blocks: string[] = [];
+  for (const [category, items] of byCategory) {
+    const lines = items.map((it) => `- ${it.name}: ${money(it.price)}${it.desc ? ` (${it.desc})` : ""}`);
+    blocks.push(`${category}:\n${lines.join("\n")}`);
+  }
+  return blocks.join("\n\n");
+}
+
 /**
  * Genera la respuesta del bot de WhatsApp con Claude. `orderPageUrl` se le pasa siempre al
- * modelo para que lo comparta cuando el cliente quiera hacer un pedido.
+ * modelo para que lo comparta cuando el cliente quiera hacer un pedido, y `menu` es el
+ * catálogo activo (leído en vivo de la base/Sheet) para que responda precios reales y
+ * actualizados sin necesidad de cargarlos a mano.
  */
-export async function generateBotReply(userMessage: string, businessInfo: string, orderPageUrl: string): Promise<string> {
+export async function generateBotReply(
+  userMessage: string,
+  businessInfo: string,
+  orderPageUrl: string,
+  menu: MenuItem[]
+): Promise<string> {
   const anthropic = getClient();
   if (!anthropic) {
     return `Gracias por tu mensaje. Para hacer un pedido entrá acá: ${orderPageUrl}`;
@@ -24,8 +49,11 @@ export async function generateBotReply(userMessage: string, businessInfo: string
     "Información del negocio (horarios, ubicación, medios de pago, etc.):",
     businessInfo,
     "",
-    `Si el cliente quiere hacer un pedido, pide el menú/la carta, o pregunta precios de productos específicos, pasale este link para que pida directo ahí: ${orderPageUrl}`,
-    "No inventes precios ni productos que no estén en la información de arriba: si preguntan por un precio puntual, mandalos al link de la carta.",
+    "Carta actual con precios (es la fuente de verdad, se actualiza sola — usala siempre que pregunten por productos o precios):",
+    formatCatalog(menu),
+    "",
+    `Si el cliente quiere hacer un pedido, pasale este link para que pida directo ahí: ${orderPageUrl}`,
+    "No inventes precios ni productos que no estén en la carta de arriba. Si preguntan por algo que no está, decí que no lo tenés.",
   ].join("\n");
 
   try {
