@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import type { Order, MenuItem, Expense, Closure, Cadete, DeliveryInfo, Settings } from "@/lib/types";
-import { money, amountToCollect, whatsappUrlFor } from "@/lib/domain";
+import { money, amountToCollect, whatsappUrlFor, paymentLabel } from "@/lib/domain";
 import { playBeep } from "@/lib/beep";
 import { printOrderTicket } from "@/lib/printer";
 import CajaTab from "@/app/components/CajaTab";
@@ -25,6 +25,7 @@ export default function App() {
   const [cadetes, setCadetes] = useState<Cadete[]>([]);
   const [deliveries, setDeliveries] = useState<DeliveryInfo[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   const reloadAll = useCallback(async () => {
     const [o, m, e, c, cd, dv, s] = await Promise.all([
@@ -55,6 +56,11 @@ export default function App() {
     const id = setInterval(() => {
       fetch("/api/settings").then((r) => r.json()).then(setSettings);
     }, 60000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(id);
   }, []);
 
@@ -97,7 +103,26 @@ export default function App() {
     if (!order.customerPhone) { alert("Este pedido no tiene teléfono cargado."); return; }
     const minutes = prompt("¿En cuántos minutos va a estar el pedido?", "30");
     if (minutes === null) return;
-    const msg = `¡Hola${order.customerName ? " " + order.customerName : ""}! Te confirmamos tu pedido #${order.num} en Menú Porá 🍔. Va a estar listo en aproximadamente ${minutes} minutos. ¡Gracias por tu pedido!`;
+
+    const itemsList = order.items.map((it) => `• ${it.qty}x ${it.name}`).join("\n");
+    const entregaLine = order.delivery === "envio"
+      ? `🛵 Envío${order.delivery_?.address ? ` a: ${order.delivery_.address}` : ""}`
+      : "🏠 Retira por el local";
+    const lines = [
+      `¡Hola${order.customerName ? " " + order.customerName : ""}! Te confirmamos tu pedido #${order.num} en Menú Porá 🍔`,
+      "",
+      "Tu pedido:",
+      itemsList,
+      "",
+      entregaLine,
+      `💳 Pago: ${paymentLabel(order.payment)}`,
+      `💰 Total: ${money(order.total)}`,
+      order.note ? `📝 Nota: ${order.note}` : "",
+      "",
+      `Va a estar listo en aproximadamente ${minutes} minutos.`,
+      "Si algo está mal (dirección, algún ítem, etc.) respondé este mensaje y lo corregimos. ¡Gracias por tu pedido!",
+    ].filter(Boolean);
+    const msg = lines.join("\n");
     window.open(`${whatsappUrlFor(order.customerPhone)}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -109,7 +134,11 @@ export default function App() {
     });
     await reloadAll();
   };
-  const pendingClientOrders = orders.filter((o) => o.source === "cliente" && o.confirmStatus === "pendiente");
+  const pendingClientOrders = orders
+    .filter((o) => o.source === "cliente" && o.confirmStatus === "pendiente")
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+  const minutesAgo = (iso: string) => Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60000));
 
   if (!loaded || !settings) {
     return <div className="loading">CARGANDO...</div>;
@@ -129,7 +158,9 @@ export default function App() {
           </div>
         </div>
         <div className="tabs">
-          <button className={"tab" + (view === "caja" ? " active" : "")} onClick={() => setView("caja")}>Caja de hoy</button>
+          <button className={"tab" + (view === "caja" ? " active" : "")} onClick={() => setView("caja")}>
+            Caja de hoy{pendingClientOrders.length > 0 && ` 🔴${pendingClientOrders.length}`}
+          </button>
           <button className={"tab" + (view === "historial" ? " active" : "")} onClick={() => setView("historial")}>Historial ventas</button>
           <button className={"tab" + (view === "compras" ? " active" : "")} onClick={() => setView("compras")}>Compras / Insumos</button>
           <button className={"tab" + (view === "envios" ? " active" : "")} onClick={() => setView("envios")}>Envíos</button>
@@ -141,9 +172,14 @@ export default function App() {
 
       {pendingClientOrders.length > 0 && (
         <div style={{ background: "var(--red)", padding: "10px 20px" }}>
-          {pendingClientOrders.map((o) => (
-            <div key={o.id} className="card" style={{ background: "var(--panel)", marginBottom: 8, maxWidth: 700, marginLeft: "auto", marginRight: "auto" }}>
-              <h2>🔔 Pedido nuevo del cliente #{o.num}</h2>
+          <div style={{ maxWidth: 700, margin: "0 auto 8px", color: "white", fontWeight: "bold", fontSize: 13, letterSpacing: ".5px" }}>
+            🔔 {pendingClientOrders.length} pedido{pendingClientOrders.length > 1 ? "s" : ""} esperando confirmación — el más viejo primero
+          </div>
+          {pendingClientOrders.map((o) => {
+            const waitMin = minutesAgo(o.createdAt);
+            return (
+            <div key={o.id} className="card" style={{ background: "var(--panel)", marginBottom: 8, maxWidth: 700, marginLeft: "auto", marginRight: "auto", borderLeft: waitMin >= 5 ? "4px solid var(--red)" : "4px solid var(--mustard)" }}>
+              <h2>🔔 Pedido nuevo del cliente #{o.num} <span style={{ fontWeight: "normal", fontSize: 11, color: waitMin >= 5 ? "var(--red)" : "var(--muted)" }}>hace {waitMin} min</span></h2>
               <div>{o.customerName}{o.customerPhone ? ` · ${o.customerPhone}` : ""} — {money(o.total)}</div>
               <div className="meta" style={{ fontSize: 12, color: "var(--muted)" }}>{o.items.map((it) => `${it.qty}× ${it.name}`).join(", ")}</div>
               {o.delivery === "envio" && <div className="meta" style={{ fontSize: 12 }}>Envío{o.delivery_?.address ? `: ${o.delivery_.address}` : ""}</div>}
@@ -155,7 +191,8 @@ export default function App() {
                 <button className="small-btn del" onClick={() => rejectOrder(o.id)}>Rechazar</button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
