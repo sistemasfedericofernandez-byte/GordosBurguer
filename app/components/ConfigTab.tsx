@@ -15,6 +15,8 @@ export default function ConfigTab({ settings, reload }: { settings: Settings; re
   const [businessInfoMsg, setBusinessInfoMsg] = useState("");
   const [businessWhatsapp, setBusinessWhatsapp] = useState(settings.businessWhatsapp || "");
   const [businessWhatsappMsg, setBusinessWhatsappMsg] = useState("");
+  const [paymentAlias, setPaymentAlias] = useState(settings.paymentAlias || "");
+  const [paymentAliasMsg, setPaymentAliasMsg] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
   const [printerConnected, setPrinterConnected] = useState(false);
   const [printerMsg, setPrinterMsg] = useState("");
@@ -60,6 +62,12 @@ export default function ConfigTab({ settings, reload }: { settings: Settings; re
   const saveBusinessWhatsapp = async () => {
     await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ businessWhatsapp }) });
     setBusinessWhatsappMsg("Número guardado.");
+    await reload();
+  };
+
+  const savePaymentAlias = async () => {
+    await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentAlias }) });
+    setPaymentAliasMsg("Alias guardado.");
     await reload();
   };
 
@@ -114,6 +122,14 @@ export default function ConfigTab({ settings, reload }: { settings: Settings; re
         <input type="text" placeholder="Ej: 3794669197" value={businessWhatsapp} onChange={(e) => setBusinessWhatsapp(e.target.value)} />
         <button className="send-btn" style={{ marginTop: 10 }} onClick={saveBusinessWhatsapp}>Guardar número</button>
         {businessWhatsappMsg && <p className="order-note">{businessWhatsappMsg}</p>}
+      </div>
+
+      <div className="card">
+        <h2>Alias para transferencias / Mercado Pago</h2>
+        <p className="empty-note">Se incluye en el mensaje de confirmación por WhatsApp cuando el cliente eligió pagar con transferencia o Mercado Pago.</p>
+        <input type="text" placeholder="Ej: licfede" value={paymentAlias} onChange={(e) => setPaymentAlias(e.target.value)} />
+        <button className="send-btn" style={{ marginTop: 10 }} onClick={savePaymentAlias}>Guardar alias</button>
+        {paymentAliasMsg && <p className="order-note">{paymentAliasMsg}</p>}
       </div>
 
       <div className="card">

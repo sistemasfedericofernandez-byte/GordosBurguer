@@ -84,3 +84,13 @@ export async function getBusinessWhatsapp(): Promise<string> {
 export async function setBusinessWhatsapp(value: string): Promise<void> {
   await setSetting("businessWhatsapp", value);
 }
+
+const DEFAULT_PAYMENT_ALIAS = "licfede";
+
+export async function getPaymentAlias(): Promise<string> {
+  return (await getSetting("paymentAlias")) ?? DEFAULT_PAYMENT_ALIAS;
+}
+
+export async function setPaymentAlias(value: string): Promise<void> {
+  await setSetting("paymentAlias", value);
+}

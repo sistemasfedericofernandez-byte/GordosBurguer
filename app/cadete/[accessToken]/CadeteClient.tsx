@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import type { DeliveryInfo } from "@/lib/types";
 import { money, telUrlFor, whatsappUrlFor, amountToCollect } from "@/lib/domain";
-import { playBeep } from "@/lib/beep";
+import { playBeep, unlockAudio } from "@/lib/beep";
 
 export default function CadeteClient({ accessToken }: { accessToken: string }) {
   const [name, setName] = useState("");
@@ -16,6 +16,7 @@ export default function CadeteClient({ accessToken }: { accessToken: string }) {
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | "unsupported">(() =>
     typeof Notification === "undefined" ? "unsupported" : Notification.permission
   );
+  const [soundEnabled, setSoundEnabled] = useState(false);
   const seenIds = useRef<Set<string> | null>(null);
 
   const load = useCallback(async () => {
@@ -43,9 +44,13 @@ export default function CadeteClient({ accessToken }: { accessToken: string }) {
   }, [accessToken]);
 
   const enableNotifications = async () => {
-    if (typeof Notification === "undefined") return;
-    const perm = await Notification.requestPermission();
-    setNotifPermission(perm);
+    // Tiene que llamarse sincrónicamente dentro del click para "destrabar" el audio del navegador.
+    unlockAudio();
+    setSoundEnabled(true);
+    if (typeof Notification !== "undefined") {
+      const perm = await Notification.requestPermission();
+      setNotifPermission(perm);
+    }
   };
 
   useEffect(() => {
@@ -76,12 +81,12 @@ export default function CadeteClient({ accessToken }: { accessToken: string }) {
   return (
     <div className="cadete-shell">
       <h1 className="display" style={{ color: "var(--mustard)", fontSize: 22, marginBottom: 8 }}>Ronda de {name}</h1>
-      {notifPermission === "default" && (
+      {!soundEnabled && (
         <button className="mini-btn" style={{ marginBottom: 14, width: "100%" }} onClick={enableNotifications}>
-          🔔 Activar notificaciones de pedidos nuevos
+          🔔 Activar aviso de pedidos nuevos
         </button>
       )}
-      {notifPermission === "denied" && (
+      {soundEnabled && notifPermission === "denied" && (
         <p className="empty-note" style={{ marginBottom: 14 }}>
           Bloqueaste las notificaciones del navegador — igual vas a escuchar un sonido y vibrar cuando llegue un pedido nuevo mientras tengas esta página abierta.
         </p>

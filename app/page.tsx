@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import type { Order, MenuItem, Expense, Closure, Cadete, DeliveryInfo, Settings } from "@/lib/types";
 import { money, amountToCollect, whatsappUrlFor, paymentLabel } from "@/lib/domain";
-import { playBeep } from "@/lib/beep";
+import { playBeep, unlockAudio } from "@/lib/beep";
 import { printOrderTicket } from "@/lib/printer";
 import CajaTab from "@/app/components/CajaTab";
 import HistorialTab from "@/app/components/HistorialTab";
@@ -53,6 +53,14 @@ export default function App() {
   }, [reloadAll]);
 
   useEffect(() => {
+    // Destraba el audio del navegador con el primer click en cualquier parte de la pantalla,
+    // así el beep de pedidos nuevos puede sonar después aunque lo dispare el poll (sin click).
+    const unlock = () => unlockAudio();
+    document.addEventListener("click", unlock, { once: true });
+    return () => document.removeEventListener("click", unlock);
+  }, []);
+
+  useEffect(() => {
     const id = setInterval(() => {
       fetch("/api/settings").then((r) => r.json()).then(setSettings);
     }, 60000);
@@ -99,7 +107,7 @@ export default function App() {
     });
     await reloadAll();
   };
-  const notifyCustomerWhatsapp = (order: Order) => {
+  const notifyCustomerWhatsapp = async (order: Order) => {
     if (!order.customerPhone) { alert("Este pedido no tiene teléfono cargado."); return; }
     const isEnvio = order.delivery === "envio";
 
@@ -110,24 +118,37 @@ export default function App() {
     if (isEnvio) {
       shippingCost = prompt("¿Cuánto va a salir el envío?", String(order.delivery_?.tariff || ""));
       if (shippingCost === null) return;
+      const tariffValue = parseFloat(shippingCost) || 0;
+      if (order.delivery_?.id) {
+        await fetch(`/api/deliveries/${order.delivery_.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tariff: tariffValue }),
+        });
+      }
     }
 
-    const itemsList = order.items.map((it) => `• ${it.qty}x ${it.name}`).join("\n");
+    const shippingValue = isEnvio ? (parseFloat(shippingCost || "0") || 0) : 0;
+    const grandTotal = order.total + shippingValue;
+
+    const itemsList = order.items.map((it) => `${it.qty}x ${it.name} — ${money(it.price * it.qty)}`).join("\n");
     const entregaLine = isEnvio
-      ? `🛵 Envío${order.delivery_?.address ? ` a: ${order.delivery_.address}` : ""}`
-      : "🏠 Retira por el local";
-    const shippingLine = isEnvio && shippingCost ? `🛵 Costo del envío: ${money(parseFloat(shippingCost) || 0)}` : "";
+      ? `*Envío a:*${order.delivery_?.address ? ` ${order.delivery_.address}` : ""}`
+      : "*Retira por el local*";
+    const shippingLine = isEnvio && shippingCost ? `*Costo del envío:* ${money(shippingValue)}` : "";
+    const aliasLine = order.payment !== "efectivo" ? `*Alias para transferir:* ${settings?.paymentAlias || "licfede"}` : "";
     const lines = [
-      `¡Hola${order.customerName ? " " + order.customerName : ""}! Te confirmamos tu pedido #${order.num} en Menú Porá 🍔`,
+      `¡Hola${order.customerName ? " " + order.customerName : ""}! Te confirmamos tu pedido #${order.num} en Menú Porá.`,
       "",
-      "Tu pedido:",
+      "*Tu pedido:*",
       itemsList,
       "",
       entregaLine,
       shippingLine,
-      `💳 Pago: ${paymentLabel(order.payment)}`,
-      `💰 Total: ${money(order.total)}`,
-      order.note ? `📝 Nota: ${order.note}` : "",
+      `*Pago:* ${paymentLabel(order.payment)}`,
+      aliasLine,
+      `*Total:* ${money(grandTotal)}`,
+      order.note ? `*Nota:* ${order.note}` : "",
       "",
       `Va a estar listo en aproximadamente ${minutes} minutos.`,
       "Si algo está mal (dirección, algún ítem, etc.) respondé este mensaje y lo corregimos. ¡Gracias por tu pedido!",

@@ -13,6 +13,8 @@ import {
   setBusinessInfo,
   getBusinessWhatsapp,
   setBusinessWhatsapp,
+  getPaymentAlias,
+  setPaymentAlias,
 } from "@/lib/auth";
 
 export async function GET() {
@@ -23,6 +25,7 @@ export async function GET() {
     defaultTariff: await getDefaultTariff(),
     businessInfo: await getBusinessInfo(),
     businessWhatsapp: await getBusinessWhatsapp(),
+    paymentAlias: await getPaymentAlias(),
   });
 }
 
@@ -58,6 +61,11 @@ export async function PATCH(request: NextRequest) {
 
   if (body.businessWhatsapp !== undefined) {
     await setBusinessWhatsapp(body.businessWhatsapp);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (body.paymentAlias !== undefined) {
+    await setPaymentAlias(body.paymentAlias);
     return NextResponse.json({ ok: true });
   }
 

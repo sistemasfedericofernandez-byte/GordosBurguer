@@ -90,4 +90,5 @@ export type Settings = {
   defaultTariff: number;
   businessInfo: string;
   businessWhatsapp: string;
+  paymentAlias: string;
 };
