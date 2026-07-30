@@ -10,11 +10,11 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.115.0",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "googleapis": "^173.0.0",
     "next": "16.2.12",
+    "openai": "^7.1.0",
     "pg": "^8.22.0",
     "prisma": "^7.9.1",
     "react": "19.2.4",

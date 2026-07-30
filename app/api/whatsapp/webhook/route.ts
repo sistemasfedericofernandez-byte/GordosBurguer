@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { getBusinessInfo } from "@/lib/auth";
-import { generateBotReply } from "@/lib/claudeBot";
+import { generateBotReply } from "@/lib/openaiBot";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
 import { getActiveMenu } from "@/lib/menu";
 

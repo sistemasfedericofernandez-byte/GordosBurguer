@@ -1,12 +1,12 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import type { MenuItem } from "@/lib/types";
 import { money } from "@/lib/domain";
 
-let client: Anthropic | null = null;
-function getClient(): Anthropic | null {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+let client: OpenAI | null = null;
+function getClient(): OpenAI | null {
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
-  if (!client) client = new Anthropic({ apiKey });
+  if (!client) client = new OpenAI({ apiKey });
   return client;
 }
 
@@ -27,7 +27,7 @@ function formatCatalog(menu: MenuItem[]): string {
 }
 
 /**
- * Genera la respuesta del bot de WhatsApp con Claude. `orderPageUrl` se le pasa siempre al
+ * Genera la respuesta del bot de WhatsApp con OpenAI. `orderPageUrl` se le pasa siempre al
  * modelo para que lo comparta cuando el cliente quiera hacer un pedido, y `menu` es el
  * catálogo activo (leído en vivo de la base/Sheet) para que responda precios reales y
  * actualizados sin necesidad de cargarlos a mano.
@@ -38,8 +38,8 @@ export async function generateBotReply(
   orderPageUrl: string,
   menu: MenuItem[]
 ): Promise<string> {
-  const anthropic = getClient();
-  if (!anthropic) {
+  const openai = getClient();
+  if (!openai) {
     return `Gracias por tu mensaje. Para hacer un pedido entrá acá: ${orderPageUrl}`;
   }
 
@@ -57,16 +57,17 @@ export async function generateBotReply(
   ].join("\n");
 
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-5",
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
       max_tokens: 300,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userMessage }],
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
     });
-    const textBlock = response.content.find((b) => b.type === "text");
-    return textBlock && textBlock.type === "text" ? textBlock.text : `Para hacer tu pedido entrá acá: ${orderPageUrl}`;
+    return response.choices[0]?.message?.content?.trim() || `Para hacer tu pedido entrá acá: ${orderPageUrl}`;
   } catch (err) {
-    console.error("Error generando respuesta con Claude:", err);
+    console.error("Error generando respuesta con OpenAI:", err);
     return `Gracias por tu mensaje. Para hacer un pedido entrá acá: ${orderPageUrl}`;
   }
 }

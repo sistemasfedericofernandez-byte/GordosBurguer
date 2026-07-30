@@ -12,7 +12,7 @@ vivo de la pestaña "Menu" de esa misma planilla: editar un precio ahí lo actua
   WhatsApp. Los pedidos que entran por ahí quedan **pendientes de confirmación** — le suena un
   aviso a quien tenga la pestaña de Caja abierta, con botones Confirmar/Rechazar.
 - **Bot de WhatsApp** (opcional, ver más abajo): responde automático horarios/precios usando IA
-  (Claude), y le pasa al cliente el link de `/pedir` si quiere hacer un pedido.
+  (OpenAI), y le pasa al cliente el link de `/pedir` si quiere hacer un pedido.
 - **Compras / Insumos**: registro de compras con categoría, proveedor y medio de pago, e historial por día.
 - **Envíos**: cadetes propios, varias entregas a la vez por cadete, link de Google Maps, y un link
   personal por celular para que el propio cadete cargue la dirección, vea cuánto tiene que cobrar
@@ -86,7 +86,7 @@ se conecta directo a GitHub para desplegar en cada push.
 ## Bot de WhatsApp (opcional)
 
 El sistema funciona perfecto sin esto — es un extra para automatizar respuestas. Necesitás crear
-una cuenta de **WhatsApp Business Platform** (Meta) y una API key de **Anthropic**. Son cuentas
+una cuenta de **WhatsApp Business Platform** (Meta) y una API key de **OpenAI**. Son cuentas
 tuyas, no las puede crear un asistente de IA por vos.
 
 ### 1. Crear la app de Meta y el número de WhatsApp
@@ -113,8 +113,8 @@ tuyas, no las puede crear un asistente de IA por vos.
 ### 3. Variables en Vercel
 
 Cargá en **Settings → Environment Variables**: `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN`,
-`WHATSAPP_PHONE_NUMBER_ID`, `ANTHROPIC_API_KEY` (se crea en
-[console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)), y
+`WHATSAPP_PHONE_NUMBER_ID`, `OPENAI_API_KEY` (se crea en
+[platform.openai.com/api-keys](https://platform.openai.com/api-keys)), y
 `NEXT_PUBLIC_SITE_URL` con la URL pública del sitio. Redeployá.
 
 ### 4. Probar
