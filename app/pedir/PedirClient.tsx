@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import Image from "next/image";
 import type { MenuItem, CartItem } from "@/lib/types";
 import { money } from "@/lib/domain";
+import { menuItemImage } from "@/lib/menuImages";
 
 const PALETTE = ["var(--mustard)", "var(--red)", "var(--green)", "var(--blue)", "var(--purple)"];
 
@@ -21,15 +23,16 @@ function categoryEmoji(category: string): string {
 
 export default function PedirClient() {
   const [menu, setMenu] = useState<MenuItem[]>([]);
+  const [businessInfo, setBusinessInfo] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [menuSearch, setMenuSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [activeCat, setActiveCat] = useState("");
+  const [delivery, setDelivery] = useState<"retira" | "envio">("retira");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [payment, setPayment] = useState<"efectivo" | "mercadopago" | "transferencia">("efectivo");
-  const [delivery, setDelivery] = useState<"retira" | "envio">("retira");
   const [address, setAddress] = useState("");
   const [note, setNote] = useState("");
   const [sending, setSending] = useState(false);
@@ -37,24 +40,24 @@ export default function PedirClient() {
   const [sentOrderNum, setSentOrderNum] = useState<number | null>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
-  const loadMenu = useCallback(async () => {
-    const res = await fetch("/api/menu");
-    const data = await res.json();
-    setMenu(data);
+  const loadData = useCallback(async () => {
+    const [menuRes, settingsRes] = await Promise.all([fetch("/api/menu"), fetch("/api/settings")]);
+    setMenu(await menuRes.json());
+    const settings = await settingsRes.json();
+    setBusinessInfo(settings.businessInfo || "");
     setLoaded(true);
   }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial de datos al montar
-    loadMenu();
-  }, [loadMenu]);
+    loadData();
+  }, [loadData]);
 
   const q = menuSearch.trim().toLowerCase();
   const filteredMenu = q ? menu.filter((m) => m.name.toLowerCase().includes(q) || m.category.toLowerCase().includes(q)) : menu;
   const byCategory: Record<string, MenuItem[]> = {};
   filteredMenu.forEach((m) => { (byCategory[m.category] ||= []).push(m); });
   const categories = Object.keys(byCategory).sort((a, b) => a.localeCompare(b));
-
   const effectiveActiveCat = activeCat || categories[0] || "";
 
   const scrollToCategory = (cat: string) => {
@@ -120,11 +123,76 @@ export default function PedirClient() {
 
   if (!loaded) return <div className="pedir-app"><p className="loading">Cargando...</p></div>;
 
+  const cartContent = (
+    <>
+      <h2>Mi pedido</h2>
+      {cart.length === 0 ? (
+        <p className="empty-note">Todavía no agregaste nada.</p>
+      ) : (
+        <>
+          {cart.map((c) => (
+            <div className="ticket-line" key={c.id}>
+              <span>{c.name}</span>
+              <div className="qty-ctrl">
+                <button onClick={() => changeQty(c.id!, -1)}>−</button>
+                <span>{c.qty}</span>
+                <button onClick={() => changeQty(c.id!, 1)}>+</button>
+                <span>{money(c.price * c.qty)}</span>
+                <button className="rm" onClick={() => removeItem(c.id!)}>quitar</button>
+              </div>
+            </div>
+          ))}
+          <div className="pedir-summary-row"><span>Subtotal</span><span>{money(cartTotal)}</span></div>
+          <div className="pedir-summary-row"><span>Envío</span><span>{delivery === "envio" ? "A coordinar" : "—"}</span></div>
+          <div className="pedir-summary-row total"><span>Total</span><span>{money(cartTotal)}</span></div>
+
+          <div style={{ marginTop: 16 }}>
+            <label className="field-label">Tu nombre</label>
+            <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+            <label className="field-label">Tu teléfono</label>
+            <input type="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
+
+            <label className="field-label">Medio de pago</label>
+            <div className="seg">
+              <button className={payment === "efectivo" ? "active" : ""} onClick={() => setPayment("efectivo")}>Efectivo</button>
+              <button className={"alt" + (payment === "mercadopago" ? " active" : "")} onClick={() => setPayment("mercadopago")}>Mercado Pago</button>
+              <button className={"purp" + (payment === "transferencia" ? " active" : "")} onClick={() => setPayment("transferencia")}>Transferencia</button>
+            </div>
+
+            {delivery === "envio" && (
+              <>
+                <label className="field-label">Dirección de entrega</label>
+                <input type="text" placeholder="Calle, número, referencia" value={address} onChange={(e) => setAddress(e.target.value)} />
+              </>
+            )}
+
+            <label className="field-label">Nota (sin cebolla, etc.)</label>
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Opcional" />
+
+            {error && <p className="order-note" style={{ color: "var(--red)" }}>{error}</p>}
+
+            <button className="send-btn" disabled={!canSubmit || sending} onClick={submitOrder}>
+              {sending ? "Enviando..." : `Enviar pedido · ${money(cartTotal)}`}
+            </button>
+          </div>
+        </>
+      )}
+    </>
+  );
+
   return (
     <div className="pedir-app">
-      <div className="pedir-header">
+      <div className="pedir-hero">
+        <div className="pedir-logo">MP</div>
         <div className="brand-name">Menú Porá</div>
-        <div className="brand-tagline">Armá tu pedido y lo confirmamos en breve</div>
+        {businessInfo && <div className="brand-info">{businessInfo}</div>}
+        <div className="pedir-toggle">
+          <button className={delivery === "envio" ? "active" : ""} onClick={() => setDelivery("envio")}>Delivery</button>
+          <button className={delivery === "retira" ? "active" : ""} onClick={() => setDelivery("retira")}>Para retirar</button>
+        </div>
+      </div>
+
+      <div className="pedir-search">
         <input type="text" placeholder="🔍 Buscar producto..." value={menuSearch} onChange={(e) => setMenuSearch(e.target.value)} />
       </div>
 
@@ -132,7 +200,8 @@ export default function PedirClient() {
         <div className="pedir-catnav">
           {categories.map((cat) => (
             <button key={cat} className={effectiveActiveCat === cat ? "active" : ""} onClick={() => scrollToCategory(cat)}>
-              {categoryEmoji(cat)} {cat}
+              <span className="icon">{categoryEmoji(cat)}</span>
+              {cat}
             </button>
           ))}
         </div>
@@ -140,35 +209,48 @@ export default function PedirClient() {
 
       {menu.length === 0 && <p className="empty-note" style={{ padding: 20, textAlign: "center" }}>El menú no está disponible por ahora.</p>}
 
-      {categories.map((cat, catIdx) => (
-        <section key={cat} className="pedir-section" ref={(el) => { sectionRefs.current[cat] = el; }}>
-          <h2>{categoryEmoji(cat)} {cat}</h2>
-          {byCategory[cat].map((item) => {
-            const inCart = qtyInCart(item.id);
-            return (
-              <div className="pedir-card" key={item.id}>
-                <div className="pedir-thumb" style={{ background: PALETTE[catIdx % PALETTE.length], opacity: 0.9 }}>
-                  {categoryEmoji(cat)}
-                </div>
-                <div className="pedir-card-body">
-                  <div className="name">{item.name}</div>
-                  {item.desc && <div className="desc">{item.desc}</div>}
-                  <div className="price">{money(item.price)}</div>
-                </div>
-                {inCart > 0 ? (
-                  <div className="pedir-qty">
-                    <button onClick={() => changeQty(item.id, -1)}>−</button>
-                    <span>{inCart}</span>
-                    <button onClick={() => changeQty(item.id, 1)}>+</button>
-                  </div>
-                ) : (
-                  <button className="pedir-add-btn" onClick={() => addToCart(item)}>+</button>
-                )}
-              </div>
-            );
-          })}
-        </section>
-      ))}
+      <div className="pedir-layout">
+        <div className="pedir-main">
+          <div className="pedir-catalog">
+            {categories.map((cat, catIdx) => (
+              <section key={cat} className="pedir-section" ref={(el) => { sectionRefs.current[cat] = el; }}>
+                <h2>{categoryEmoji(cat)} {cat}</h2>
+                {byCategory[cat].map((item) => {
+                  const inCart = qtyInCart(item.id);
+                  const img = menuItemImage(item.name);
+                  return (
+                    <div className="pedir-card" key={item.id}>
+                      <div className="pedir-thumb" style={img ? undefined : { background: PALETTE[catIdx % PALETTE.length], opacity: 0.9 }}>
+                        {img ? (
+                          <Image src={img} alt={item.name} width={72} height={72} style={{ objectFit: "cover" }} />
+                        ) : (
+                          categoryEmoji(cat)
+                        )}
+                      </div>
+                      <div className="pedir-card-body">
+                        <div className="name">{item.name}</div>
+                        {item.desc && <div className="desc">{item.desc}</div>}
+                        <div className="price">{money(item.price)}</div>
+                      </div>
+                      {inCart > 0 ? (
+                        <div className="pedir-qty">
+                          <button onClick={() => changeQty(item.id, -1)}>−</button>
+                          <span>{inCart}</span>
+                          <button onClick={() => changeQty(item.id, 1)}>+</button>
+                        </div>
+                      ) : (
+                        <button className="pedir-add-btn" onClick={() => addToCart(item)}>+</button>
+                      )}
+                    </div>
+                  );
+                })}
+              </section>
+            ))}
+          </div>
+
+          <div className="pedir-panel">{cartContent}</div>
+        </div>
+      </div>
 
       {cart.length > 0 && !cartOpen && (
         <button className="pedir-cartbar" onClick={() => setCartOpen(true)}>
@@ -182,56 +264,7 @@ export default function PedirClient() {
           <div className="pedir-drawer" onClick={(e) => e.stopPropagation()}>
             <div className="pedir-drawer-handle" />
             <button className="pedir-close" onClick={() => setCartOpen(false)}>✕</button>
-            <h2>Tu pedido</h2>
-            {cart.map((c) => (
-              <div className="ticket-line" key={c.id}>
-                <span>{c.name}</span>
-                <div className="qty-ctrl">
-                  <button onClick={() => changeQty(c.id!, -1)}>−</button>
-                  <span>{c.qty}</span>
-                  <button onClick={() => changeQty(c.id!, 1)}>+</button>
-                  <span>{money(c.price * c.qty)}</span>
-                  <button className="rm" onClick={() => removeItem(c.id!)}>quitar</button>
-                </div>
-              </div>
-            ))}
-            <div className="total-row"><span>Total</span><span>{money(cartTotal)}</span></div>
-
-            <div style={{ marginTop: 18 }}>
-              <label className="field-label">Tu nombre</label>
-              <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-              <label className="field-label">Tu teléfono</label>
-              <input type="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
-
-              <label className="field-label">Medio de pago</label>
-              <div className="seg">
-                <button className={payment === "efectivo" ? "active" : ""} onClick={() => setPayment("efectivo")}>Efectivo</button>
-                <button className={"alt" + (payment === "mercadopago" ? " active" : "")} onClick={() => setPayment("mercadopago")}>Mercado Pago</button>
-                <button className={"purp" + (payment === "transferencia" ? " active" : "")} onClick={() => setPayment("transferencia")}>Transferencia</button>
-              </div>
-
-              <label className="field-label">Entrega</label>
-              <div className="seg">
-                <button className={delivery === "retira" ? "active" : ""} onClick={() => setDelivery("retira")}>Retira</button>
-                <button className={"ship" + (delivery === "envio" ? " active" : "")} onClick={() => setDelivery("envio")}>Envío</button>
-              </div>
-
-              {delivery === "envio" && (
-                <>
-                  <label className="field-label">Dirección de entrega</label>
-                  <input type="text" placeholder="Calle, número, referencia" value={address} onChange={(e) => setAddress(e.target.value)} />
-                </>
-              )}
-
-              <label className="field-label">Nota (sin cebolla, etc.)</label>
-              <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Opcional" />
-
-              {error && <p className="order-note" style={{ color: "var(--red)" }}>{error}</p>}
-
-              <button className="send-btn" disabled={!canSubmit || sending} onClick={submitOrder}>
-                {sending ? "Enviando..." : `Enviar pedido · ${money(cartTotal)}`}
-              </button>
-            </div>
+            {cartContent}
           </div>
         </div>
       )}
