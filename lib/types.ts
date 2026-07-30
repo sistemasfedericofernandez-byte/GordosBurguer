@@ -89,4 +89,5 @@ export type Settings = {
   trialDeadline: number;
   defaultTariff: number;
   businessInfo: string;
+  businessWhatsapp: string;
 };

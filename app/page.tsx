@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import type { Order, MenuItem, Expense, Closure, Cadete, DeliveryInfo, Settings } from "@/lib/types";
-import { money, amountToCollect } from "@/lib/domain";
+import { money, amountToCollect, whatsappUrlFor } from "@/lib/domain";
 import { playBeep } from "@/lib/beep";
 import { printOrderTicket } from "@/lib/printer";
 import CajaTab from "@/app/components/CajaTab";
@@ -93,6 +93,14 @@ export default function App() {
     });
     await reloadAll();
   };
+  const notifyCustomerWhatsapp = (order: Order) => {
+    if (!order.customerPhone) { alert("Este pedido no tiene teléfono cargado."); return; }
+    const minutes = prompt("¿En cuántos minutos va a estar el pedido?", "30");
+    if (minutes === null) return;
+    const msg = `¡Hola${order.customerName ? " " + order.customerName : ""}! Te confirmamos tu pedido #${order.num} en Menú Porá 🍔. Va a estar listo en aproximadamente ${minutes} minutos. ¡Gracias por tu pedido!`;
+    window.open(`${whatsappUrlFor(order.customerPhone)}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
   const rejectOrder = async (orderId: string) => {
     const reason = prompt("Motivo del rechazo (opcional):") || "";
     await fetch(`/api/orders/${orderId}`, {
@@ -141,6 +149,9 @@ export default function App() {
               {o.delivery === "envio" && <div className="meta" style={{ fontSize: 12 }}>Envío{o.delivery_?.address ? `: ${o.delivery_.address}` : ""}</div>}
               <div className="action-row" style={{ marginTop: 10 }}>
                 <button className="small-btn done" onClick={() => confirmOrder(o)}>Confirmar</button>
+                <button className="small-btn edit" style={{ background: "rgba(37,211,102,.15)", color: "#25D366", border: "1px solid #25D366" }} onClick={() => notifyCustomerWhatsapp(o)}>
+                  📲 Avisar por WhatsApp
+                </button>
                 <button className="small-btn del" onClick={() => rejectOrder(o.id)}>Rechazar</button>
               </div>
             </div>

@@ -13,6 +13,8 @@ export default function ConfigTab({ settings, reload }: { settings: Settings; re
   const [tariffMsg, setTariffMsg] = useState("");
   const [businessInfo, setBusinessInfo] = useState(settings.businessInfo || "");
   const [businessInfoMsg, setBusinessInfoMsg] = useState("");
+  const [businessWhatsapp, setBusinessWhatsapp] = useState(settings.businessWhatsapp || "");
+  const [businessWhatsappMsg, setBusinessWhatsappMsg] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
   const [printerConnected, setPrinterConnected] = useState(false);
   const [printerMsg, setPrinterMsg] = useState("");
@@ -52,6 +54,12 @@ export default function ConfigTab({ settings, reload }: { settings: Settings; re
   const saveBusinessInfo = async () => {
     await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ businessInfo }) });
     setBusinessInfoMsg("Información guardada.");
+    await reload();
+  };
+
+  const saveBusinessWhatsapp = async () => {
+    await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ businessWhatsapp }) });
+    setBusinessWhatsappMsg("Número guardado.");
     await reload();
   };
 
@@ -102,6 +110,10 @@ export default function ConfigTab({ settings, reload }: { settings: Settings; re
         <button className="export-btn" style={{ marginTop: 10 }} onClick={copyOrderLink}>
           {copiedLink ? "¡Copiado!" : "Copiar link de pedidos"}
         </button>
+        <label className="field-label">Número de WhatsApp del local (para el botón &quot;Volver a WhatsApp&quot;)</label>
+        <input type="text" placeholder="Ej: 3794669197" value={businessWhatsapp} onChange={(e) => setBusinessWhatsapp(e.target.value)} />
+        <button className="send-btn" style={{ marginTop: 10 }} onClick={saveBusinessWhatsapp}>Guardar número</button>
+        {businessWhatsappMsg && <p className="order-note">{businessWhatsappMsg}</p>}
       </div>
 
       <div className="card">

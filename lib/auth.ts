@@ -76,3 +76,11 @@ export async function getBusinessInfo(): Promise<string> {
 export async function setBusinessInfo(value: string): Promise<void> {
   await setSetting("businessInfo", value);
 }
+
+export async function getBusinessWhatsapp(): Promise<string> {
+  return (await getSetting("businessWhatsapp")) ?? "";
+}
+
+export async function setBusinessWhatsapp(value: string): Promise<void> {
+  await setSetting("businessWhatsapp", value);
+}

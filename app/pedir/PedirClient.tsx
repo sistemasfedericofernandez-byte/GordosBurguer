@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import type { MenuItem, CartItem } from "@/lib/types";
-import { money } from "@/lib/domain";
+import { money, whatsappUrlFor } from "@/lib/domain";
 import { menuItemImage } from "@/lib/menuImages";
 
 const PALETTE = ["var(--mustard)", "var(--red)", "var(--green)", "var(--blue)", "var(--purple)"];
@@ -24,6 +24,7 @@ function categoryEmoji(category: string): string {
 export default function PedirClient() {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [businessInfo, setBusinessInfo] = useState("");
+  const [businessWhatsapp, setBusinessWhatsapp] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [menuSearch, setMenuSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -45,6 +46,7 @@ export default function PedirClient() {
     setMenu(await menuRes.json());
     const settings = await settingsRes.json();
     setBusinessInfo(settings.businessInfo || "");
+    setBusinessWhatsapp(settings.businessWhatsapp || "");
     setLoaded(true);
   }, []);
 
@@ -116,6 +118,20 @@ export default function PedirClient() {
           <p className="order-note" style={{ textAlign: "center" }}>
             Tu pedido <b>#{sentOrderNum}</b> ya está en revisión. Te contactamos en breve para confirmarlo.
           </p>
+          {businessWhatsapp ? (
+            <a
+              className="send-btn"
+              style={{ display: "block", marginTop: 16, background: "#25D366" }}
+              href={`${whatsappUrlFor(businessWhatsapp)}?text=${encodeURIComponent(`Hola! Acabo de hacer el pedido #${sentOrderNum}`)}`}
+              target="_blank" rel="noopener noreferrer"
+            >
+              💬 Volver a WhatsApp
+            </a>
+          ) : (
+            <p className="empty-note" style={{ textAlign: "center", marginTop: 10 }}>
+              Ya te confirmamos tu pedido por WhatsApp, quedate atento 📲
+            </p>
+          )}
         </div>
       </div>
     );

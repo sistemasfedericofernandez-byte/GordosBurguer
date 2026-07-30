@@ -196,7 +196,7 @@ th{color:var(--muted) !important;text-transform:uppercase;font-size:10px;letter-
 .pedir-panel{display:none;}
 
 @media (min-width: 900px) {
-  .pedir-catnav-inner{justify-content:center;}
+  .pedir-catnav-inner{justify-content:space-evenly;}
   .pedir-main{grid-template-columns:1fr 340px;gap:24px;align-items:start;}
   .pedir-panel{display:block;position:sticky;top:106px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-top:16px;}
   .pedir-cartbar{display:none;}

@@ -11,6 +11,8 @@ import {
   setDefaultTariff,
   getBusinessInfo,
   setBusinessInfo,
+  getBusinessWhatsapp,
+  setBusinessWhatsapp,
 } from "@/lib/auth";
 
 export async function GET() {
@@ -20,6 +22,7 @@ export async function GET() {
     trialDeadline: TRIAL_DEADLINE,
     defaultTariff: await getDefaultTariff(),
     businessInfo: await getBusinessInfo(),
+    businessWhatsapp: await getBusinessWhatsapp(),
   });
 }
 
@@ -50,6 +53,11 @@ export async function PATCH(request: NextRequest) {
 
   if (body.businessInfo !== undefined) {
     await setBusinessInfo(body.businessInfo);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (body.businessWhatsapp !== undefined) {
+    await setBusinessWhatsapp(body.businessWhatsapp);
     return NextResponse.json({ ok: true });
   }
 
