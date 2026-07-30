@@ -31,11 +31,15 @@ export default function CadeteClient({ accessToken }: { accessToken: string }) {
     if (seenIds.current !== null) {
       const isNew = [...freshIds].some((id) => !seenIds.current!.has(id));
       if (isNew) {
-        playBeep();
-        if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate([250, 120, 250]);
-        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-          new Notification("Nueva entrega asignada 🛵", { body: "Tenés un pedido nuevo para repartir." });
-        }
+        try { playBeep(); } catch { /* no-op */ }
+        try {
+          if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate([250, 120, 250]);
+        } catch { /* no-op */ }
+        try {
+          if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+            new Notification("Nueva entrega asignada 🛵", { body: "Tenés un pedido nuevo para repartir." });
+          }
+        } catch { /* algunos navegadores (Chrome Android) no permiten "new Notification" fuera de un service worker */ }
       }
     }
     seenIds.current = freshIds;
