@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type { DeliveryInfo } from "@/lib/types";
 import { money, telUrlFor, whatsappUrlFor, amountToCollect } from "@/lib/domain";
+import { playBeep } from "@/lib/beep";
 
 export default function CadeteClient({ accessToken }: { accessToken: string }) {
   const [name, setName] = useState("");
@@ -12,16 +13,40 @@ export default function CadeteClient({ accessToken }: { accessToken: string }) {
   const [notFound, setNotFound] = useState(false);
   const [addressDrafts, setAddressDrafts] = useState<Record<string, string>>({});
   const [showHistory, setShowHistory] = useState(false);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | "unsupported">(() =>
+    typeof Notification === "undefined" ? "unsupported" : Notification.permission
+  );
+  const seenIds = useRef<Set<string> | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/cadetes/track/${accessToken}`, { cache: "no-store" });
     if (!res.ok) { setNotFound(true); setLoaded(true); return; }
     const data = await res.json();
     setName(data.cadete.name);
-    setDeliveries(data.deliveries);
     setHistory(data.history || []);
+
+    const fresh: DeliveryInfo[] = data.deliveries;
+    const freshIds = new Set(fresh.map((d) => d.id));
+    if (seenIds.current !== null) {
+      const isNew = [...freshIds].some((id) => !seenIds.current!.has(id));
+      if (isNew) {
+        playBeep();
+        if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate([250, 120, 250]);
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          new Notification("Nueva entrega asignada 🛵", { body: "Tenés un pedido nuevo para repartir." });
+        }
+      }
+    }
+    seenIds.current = freshIds;
+    setDeliveries(fresh);
     setLoaded(true);
   }, [accessToken]);
+
+  const enableNotifications = async () => {
+    if (typeof Notification === "undefined") return;
+    const perm = await Notification.requestPermission();
+    setNotifPermission(perm);
+  };
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial de datos al montar
@@ -50,7 +75,17 @@ export default function CadeteClient({ accessToken }: { accessToken: string }) {
 
   return (
     <div className="cadete-shell">
-      <h1 className="display" style={{ color: "var(--mustard)", fontSize: 22, marginBottom: 14 }}>Ronda de {name}</h1>
+      <h1 className="display" style={{ color: "var(--mustard)", fontSize: 22, marginBottom: 8 }}>Ronda de {name}</h1>
+      {notifPermission === "default" && (
+        <button className="mini-btn" style={{ marginBottom: 14, width: "100%" }} onClick={enableNotifications}>
+          🔔 Activar notificaciones de pedidos nuevos
+        </button>
+      )}
+      {notifPermission === "denied" && (
+        <p className="empty-note" style={{ marginBottom: 14 }}>
+          Bloqueaste las notificaciones del navegador — igual vas a escuchar un sonido y vibrar cuando llegue un pedido nuevo mientras tengas esta página abierta.
+        </p>
+      )}
       {deliveries.length === 0 && <p className="empty-note">No tenés entregas asignadas por ahora.</p>}
       {deliveries.map((d) => {
         const order = d.order;

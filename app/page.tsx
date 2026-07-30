@@ -101,13 +101,22 @@ export default function App() {
   };
   const notifyCustomerWhatsapp = (order: Order) => {
     if (!order.customerPhone) { alert("Este pedido no tiene teléfono cargado."); return; }
+    const isEnvio = order.delivery === "envio";
+
     const minutes = prompt("¿En cuántos minutos va a estar el pedido?", "30");
     if (minutes === null) return;
 
+    let shippingCost: string | null = null;
+    if (isEnvio) {
+      shippingCost = prompt("¿Cuánto va a salir el envío?", String(order.delivery_?.tariff || ""));
+      if (shippingCost === null) return;
+    }
+
     const itemsList = order.items.map((it) => `• ${it.qty}x ${it.name}`).join("\n");
-    const entregaLine = order.delivery === "envio"
+    const entregaLine = isEnvio
       ? `🛵 Envío${order.delivery_?.address ? ` a: ${order.delivery_.address}` : ""}`
       : "🏠 Retira por el local";
+    const shippingLine = isEnvio && shippingCost ? `🛵 Costo del envío: ${money(parseFloat(shippingCost) || 0)}` : "";
     const lines = [
       `¡Hola${order.customerName ? " " + order.customerName : ""}! Te confirmamos tu pedido #${order.num} en Menú Porá 🍔`,
       "",
@@ -115,6 +124,7 @@ export default function App() {
       itemsList,
       "",
       entregaLine,
+      shippingLine,
       `💳 Pago: ${paymentLabel(order.payment)}`,
       `💰 Total: ${money(order.total)}`,
       order.note ? `📝 Nota: ${order.note}` : "",
