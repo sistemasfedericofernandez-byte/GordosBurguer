@@ -39,7 +39,36 @@ export default function PedirClient() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [sentOrderNum, setSentOrderNum] = useState<number | null>(null);
+  const [dragY, setDragY] = useState(0);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const barDragStartY = useRef<number | null>(null);
+  const sheetDragStartY = useRef<number | null>(null);
+
+  const onBarPointerDown = (e: React.PointerEvent) => { barDragStartY.current = e.clientY; };
+  const onBarPointerMove = (e: React.PointerEvent) => {
+    if (barDragStartY.current === null) return;
+    if (barDragStartY.current - e.clientY > 25) {
+      setCartOpen(true);
+      barDragStartY.current = null;
+    }
+  };
+  const onBarPointerUp = () => { barDragStartY.current = null; };
+
+  const onSheetPointerDown = (e: React.PointerEvent) => {
+    sheetDragStartY.current = e.clientY;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+  const onSheetPointerMove = (e: React.PointerEvent) => {
+    if (sheetDragStartY.current === null) return;
+    const delta = e.clientY - sheetDragStartY.current;
+    if (delta > 0) setDragY(delta);
+  };
+  const onSheetPointerUp = () => {
+    if (sheetDragStartY.current === null) return;
+    sheetDragStartY.current = null;
+    if (dragY > 90) setCartOpen(false);
+    setDragY(0);
+  };
 
   const loadData = useCallback(async () => {
     const [menuRes, settingsRes] = await Promise.all([fetch("/api/menu"), fetch("/api/settings")]);
@@ -279,7 +308,14 @@ export default function PedirClient() {
       </div>
 
       {cart.length > 0 && !cartOpen && (
-        <button className="pedir-cartbar" onClick={() => setCartOpen(true)}>
+        <button
+          className="pedir-cartbar"
+          onClick={() => setCartOpen(true)}
+          onPointerDown={onBarPointerDown}
+          onPointerMove={onBarPointerMove}
+          onPointerUp={onBarPointerUp}
+          onPointerCancel={onBarPointerUp}
+        >
           <span>🛒 {cartCount} {cartCount === 1 ? "ítem" : "ítems"}</span>
           <span>{money(cartTotal)} · Ver carrito ›</span>
         </button>
@@ -287,8 +323,20 @@ export default function PedirClient() {
 
       {cartOpen && (
         <div className="pedir-overlay" onClick={() => setCartOpen(false)}>
-          <div className="pedir-drawer" onClick={(e) => e.stopPropagation()}>
-            <div className="pedir-drawer-handle" />
+          <div
+            className="pedir-drawer"
+            onClick={(e) => e.stopPropagation()}
+            style={dragY ? { transform: `translateY(${dragY}px)`, transition: "none" } : undefined}
+          >
+            <div
+              className="pedir-drawer-draghandle"
+              onPointerDown={onSheetPointerDown}
+              onPointerMove={onSheetPointerMove}
+              onPointerUp={onSheetPointerUp}
+              onPointerCancel={onSheetPointerUp}
+            >
+              <div className="pedir-drawer-handle" />
+            </div>
             <button className="pedir-close" onClick={() => setCartOpen(false)}>✕</button>
             {cartContent}
           </div>
