@@ -138,7 +138,7 @@ export default function App() {
     const shippingLine = isEnvio && shippingCost ? `*Costo del envío:* ${money(shippingValue)}` : "";
     const aliasLine = order.payment !== "efectivo" ? `*Alias para transferir:* ${settings?.paymentAlias || "licfede"}` : "";
     const lines = [
-      `¡Hola${order.customerName ? " " + order.customerName : ""}! Te confirmamos tu pedido #${order.num} en Menú Porá.`,
+      `¡Hola${order.customerName ? " " + order.customerName : ""}! Te confirmamos tu pedido #${order.num} en Gordo's Burger.`,
       "",
       "*Tu pedido:*",
       itemsList,
@@ -184,7 +184,7 @@ export default function App() {
       <div className="topbar">
         <div className="brand">
           <div className="brand-text">
-            <span className="name">Menú Porá</span>
+            <span className="name">Gordo&apos;s Burger</span>
             <span className="sub">Sistema de pedidos</span>
           </div>
         </div>

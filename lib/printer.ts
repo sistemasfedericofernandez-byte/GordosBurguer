@@ -127,7 +127,7 @@ export type TicketOrder = {
 export function ticketLines(order: TicketOrder): { text: string; bold?: boolean; center?: boolean }[] {
   const money = (n: number) => "$" + Math.round(n).toLocaleString("es-AR");
   const lines: { text: string; bold?: boolean; center?: boolean }[] = [
-    { text: "MENU PORA", bold: true, center: true },
+    { text: "GORDO'S BURGER", bold: true, center: true },
     { text: `Pedido #${order.num}`, bold: true, center: true },
     { text: new Date(order.createdAt).toLocaleString("es-AR"), center: true },
     { text: "--------------------------------" },

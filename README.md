@@ -1,4 +1,4 @@
-# Menú Porá — Sistema
+# Gordo's Burger — Sistema
 
 Sistema de pedidos, caja, insumos y envíos. Corre en Vercel, guarda todo en una base Postgres
 real (Supabase), y espeja cada pedido, compra, cierre de caja y envío a una planilla de Google

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleIncomingMessage(from: string, text: string): Promise<void> {
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || "https://menu-pora.vercel.app";
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || "https://gordos-burger.vercel.app";
   const [businessInfo, menu] = await Promise.all([getBusinessInfo(), getActiveMenu()]);
   const reply = await generateBotReply(text, businessInfo, `${origin}/pedir`, menu);
   await sendWhatsAppMessage(from, reply);

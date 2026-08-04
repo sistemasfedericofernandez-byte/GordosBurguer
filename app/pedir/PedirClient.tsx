@@ -12,12 +12,14 @@ function categoryEmoji(category: string): string {
   const c = category.toLowerCase();
   if (c.includes("empanada")) return "🥟";
   if (c.includes("pizza")) return "🍕";
-  if (c.includes("hamburguesa")) return "🍔";
+  if (c.includes("hamburguesa") || c.includes("burger")) return "🍔";
   if (c.includes("milanesa")) return "🍖";
   if (c.includes("lomito") || c.includes("pan frances")) return "🥪";
   if (c.includes("papa")) return "🍟";
   if (c.includes("bebida")) return "🥤";
   if (c.includes("postre")) return "🍰";
+  if (c.includes("extra")) return "🧀";
+  if (c.includes("promo")) return "🔥";
   return "🍽️";
 }
 
@@ -199,8 +201,8 @@ export default function PedirClient() {
   return (
     <div className="pedir-app">
       <div className="pedir-hero">
-        <div className="pedir-logo">MP</div>
-        <div className="brand-name">Menú Porá</div>
+        <div className="pedir-logo">GB</div>
+        <div className="brand-name">Gordo&apos;s Burger</div>
         {businessInfo && <div className="brand-info">{businessInfo}</div>}
         <div className="pedir-toggle">
           <button className={delivery === "envio" ? "active" : ""} onClick={() => setDelivery("envio")}>Delivery</button>

@@ -44,7 +44,7 @@ export async function generateBotReply(
   }
 
   const systemPrompt = [
-    "Sos el asistente de WhatsApp de una hamburguesería/restaurante llamado Menú Porá.",
+    "Sos el asistente de WhatsApp de una hamburguesería llamada Gordo's Burger.",
     "Respondé siempre en español rioplatense, corto y directo (2-4 líneas máximo), como un mensaje de WhatsApp real.",
     "Información del negocio (horarios, ubicación, medios de pago, etc.):",
     businessInfo,

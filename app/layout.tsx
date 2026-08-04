@@ -5,7 +5,7 @@ import "./globals.css";
 const anton = Anton({ weight: "400", subsets: ["latin"], variable: "--font-anton" });
 
 export const metadata: Metadata = {
-  title: "Menú Porá",
+  title: "Gordo's Burger",
   description: "Sistema de pedidos, caja, insumos y envíos",
 };
 

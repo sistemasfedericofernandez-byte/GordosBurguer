@@ -1,27 +1,9 @@
 // Fotos reales de los productos (public/menu/*.png), asociadas por nombre.
 // Si un producto no tiene foto todavía, se usa un emoji de categoría como respaldo.
-const AVAILABLE_SLUGS = new Set([
-  "american-cheese",
-  "blue-onion",
-  "doble-cheese",
-  "empanadas-de-carne-cortada-a-cuchillo",
-  "empanadas-de-carne-xl",
-  "empanadas-de-jamon-y-queso-xl",
-  "hamburguesa-amazing",
-  "hamburguesa-especial",
-  "hamburguesas-krusty",
-  "medio-misil-de-lomito",
-  "mila-en-pan-frances-con-papas",
-  "milanesa-de-carne-a-caballo",
-  "milanesa-de-carne-con-papas",
-  "milanesa-de-carne-napolitana",
-  "papa-doble",
-  "papas-gratinadas-con-cheddar",
-  "papas-gratinadas-de-muzzarella",
-  "pizza-calabresa",
-  "pizza-jamon-y-morrones",
-  "pizza-muzzarella",
-]);
+// Todavía no hay fotos de los productos de Gordo's Burger — agregá acá el
+// slug (nombre en minúsculas, sin acentos, espacios -> guiones) a medida que
+// subas fotos a public/menu/.
+const AVAILABLE_SLUGS = new Set<string>([]);
 
 function slugify(name: string): string {
   return name

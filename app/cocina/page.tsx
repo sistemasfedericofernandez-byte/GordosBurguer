@@ -37,7 +37,7 @@ export default function CocinaPage() {
       <div className="topbar">
         <div className="brand">
           <div className="brand-text">
-            <span className="name">Menú Porá</span>
+            <span className="name">Gordo&apos;s Burger</span>
             <span className="sub">Pantalla de cocina</span>
           </div>
         </div>
