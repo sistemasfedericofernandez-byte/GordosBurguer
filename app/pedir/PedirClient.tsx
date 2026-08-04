@@ -209,7 +209,11 @@ export default function PedirClient() {
       </div>
 
       <div className="pedir-search">
-        <input type="text" placeholder="🔍 Buscar producto..." value={menuSearch} onChange={(e) => setMenuSearch(e.target.value)} />
+        <div className="pedir-search-bar">
+          <span className="pedir-search-icon">🍔</span>
+          <input type="text" placeholder="Buscá tu comida..." value={menuSearch} onChange={(e) => setMenuSearch(e.target.value)} />
+          <span className="pedir-search-go">🔍</span>
+        </div>
       </div>
 
       {categories.length > 1 && (
