@@ -170,6 +170,12 @@ export default function PedirClient() {
             <label className="field-label">Tu teléfono</label>
             <input type="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
 
+            <label className="field-label">Entrega</label>
+            <div className="seg">
+              <button className={delivery === "envio" ? "active" : ""} onClick={() => setDelivery("envio")}>Delivery</button>
+              <button className={delivery === "retira" ? "active" : ""} onClick={() => setDelivery("retira")}>Retira</button>
+            </div>
+
             <label className="field-label">Medio de pago</label>
             <div className="seg">
               <button className={payment === "efectivo" ? "active" : ""} onClick={() => setPayment("efectivo")}>Efectivo</button>
