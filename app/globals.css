@@ -135,26 +135,6 @@ th{color:var(--muted) !important;text-transform:uppercase;font-size:10px;letter-
 .new-item-form{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;}
 .new-item-form input,.new-item-form select{flex:1;min-width:110px;}
 
-/* Caja (pantalla donde el cajero carga los pedidos) */
-.caja-app{
-  --bg:#FFF6EF; --panel:#FFFFFF; --paper:#20140c; --ink:#ffffff;
-  --mustard:#FF6A3D; --line:#F1E1D3; --muted:#9C8879;
-  background:var(--bg);color:var(--paper);padding:18px;border-radius:22px;
-}
-.caja-app .stat{border-radius:14px;border-top-width:4px;box-shadow:0 4px 14px rgba(32,20,12,.05);}
-.caja-app .closure-bar{border-radius:14px;box-shadow:0 4px 14px rgba(32,20,12,.05);}
-.caja-app .card{border-radius:20px;box-shadow:0 8px 26px rgba(32,20,12,.06);}
-.caja-app .card h2{color:var(--mustard);}
-.caja-app .cat-label{border-radius:10px;}
-.caja-app .add-btn{border-radius:10px;}
-.caja-app input[type=text],.caja-app input[type=number],.caja-app textarea,.caja-app select{border-radius:12px;}
-.caja-app .seg button{border-radius:12px;}
-.caja-app .send-btn{border-radius:14px;font-family:inherit;text-transform:none;letter-spacing:0;font-weight:800;box-shadow:0 8px 20px rgba(255,106,61,.3);}
-.caja-app .send-btn:disabled{box-shadow:none;}
-.caja-app .cancel-edit-btn{border-radius:12px;}
-.caja-app .small-btn{border-radius:10px;}
-.caja-app .qty-ctrl button{border-radius:8px;}
-
 /* Cocina */
 .cocina-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;}
 .cocina-card{background:var(--panel);border:2px solid var(--mustard);border-radius:8px;padding:18px;}

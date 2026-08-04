@@ -162,7 +162,7 @@ export default function CajaTab({
   };
 
   return (
-    <div className="caja-app">
+    <div>
       <div className="stats-row">
         <div className="stat total"><div className="label">Total hoy</div><div className="value">{money(todayTotals.total)}</div></div>
         <div className="stat efectivo"><div className="label">Efectivo</div><div className="value">{money(todayTotals.efectivo)}</div></div>
