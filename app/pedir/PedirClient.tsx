@@ -6,8 +6,6 @@ import type { MenuItem, CartItem } from "@/lib/types";
 import { money, whatsappUrlFor } from "@/lib/domain";
 import { menuItemImage } from "@/lib/menuImages";
 
-const PALETTE = ["var(--mustard)", "var(--red)", "var(--green)", "var(--blue)", "var(--purple)"];
-
 function categoryEmoji(category: string): string {
   const c = category.toLowerCase();
   if (c.includes("empanada")) return "🥟";
@@ -242,7 +240,7 @@ export default function PedirClient() {
       <div className="pedir-layout">
         <div className="pedir-main">
           <div className="pedir-catalog">
-            {categories.map((cat, catIdx) => (
+            {categories.map((cat) => (
               <section key={cat} className="pedir-section" ref={(el) => { sectionRefs.current[cat] = el; }}>
                 <h2>{categoryEmoji(cat)} {cat}</h2>
                 {byCategory[cat].map((item) => {
@@ -250,13 +248,11 @@ export default function PedirClient() {
                   const img = menuItemImage(item.name);
                   return (
                     <div className="pedir-card" key={item.id}>
-                      <div className="pedir-thumb" style={img ? undefined : { background: PALETTE[catIdx % PALETTE.length], opacity: 0.9 }}>
-                        {img ? (
+                      {img && (
+                        <div className="pedir-thumb">
                           <Image src={img} alt={item.name} width={72} height={72} style={{ objectFit: "cover" }} />
-                        ) : (
-                          categoryEmoji(cat)
-                        )}
-                      </div>
+                        </div>
+                      )}
                       <div className="pedir-card-body">
                         <div className="name">{item.name}</div>
                         {item.desc && <div className="desc">{item.desc}</div>}
