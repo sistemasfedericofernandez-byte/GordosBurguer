@@ -119,7 +119,7 @@ export default function ConfigTab({ settings, reload }: { settings: Settings; re
           {copiedLink ? "¡Copiado!" : "Copiar link de pedidos"}
         </button>
         <label className="field-label">Número de WhatsApp del local (para el botón &quot;Volver a WhatsApp&quot;)</label>
-        <input type="text" placeholder="Ej: 3794669197" value={businessWhatsapp} onChange={(e) => setBusinessWhatsapp(e.target.value)} />
+        <input type="text" placeholder="Ej: 3794000000" value={businessWhatsapp} onChange={(e) => setBusinessWhatsapp(e.target.value)} />
         <button className="send-btn" style={{ marginTop: 10 }} onClick={saveBusinessWhatsapp}>Guardar número</button>
         {businessWhatsappMsg && <p className="order-note">{businessWhatsappMsg}</p>}
       </div>
@@ -127,7 +127,7 @@ export default function ConfigTab({ settings, reload }: { settings: Settings; re
       <div className="card">
         <h2>Alias para transferencias / Mercado Pago</h2>
         <p className="empty-note">Se incluye en el mensaje de confirmación por WhatsApp cuando el cliente eligió pagar con transferencia o Mercado Pago.</p>
-        <input type="text" placeholder="Ej: licfede" value={paymentAlias} onChange={(e) => setPaymentAlias(e.target.value)} />
+        <input type="text" placeholder="Ej: gordosburger.mp" value={paymentAlias} onChange={(e) => setPaymentAlias(e.target.value)} />
         <button className="send-btn" style={{ marginTop: 10 }} onClick={savePaymentAlias}>Guardar alias</button>
         {paymentAliasMsg && <p className="order-note">{paymentAliasMsg}</p>}
       </div>

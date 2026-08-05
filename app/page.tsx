@@ -136,7 +136,7 @@ export default function App() {
       ? `*Envío a:*${order.delivery_?.address ? ` ${order.delivery_.address}` : ""}`
       : "*Retira por el local*";
     const shippingLine = isEnvio && shippingCost ? `*Costo del envío:* ${money(shippingValue)}` : "";
-    const aliasLine = order.payment !== "efectivo" ? `*Alias para transferir:* ${settings?.paymentAlias || "licfede"}` : "";
+    const aliasLine = order.payment !== "efectivo" && settings?.paymentAlias ? `*Alias para transferir:* ${settings.paymentAlias}` : "";
     const lines = [
       `¡Hola${order.customerName ? " " + order.customerName : ""}! Te confirmamos tu pedido #${order.num} en Gordo's Burger.`,
       "",
