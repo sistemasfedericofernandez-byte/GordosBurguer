@@ -40,6 +40,7 @@ export default function CajaTab({
     : menu;
   const menuByCategory: Record<string, MenuItem[]> = {};
   filteredMenu.forEach((m) => { (menuByCategory[m.category] ||= []).push(m); });
+  Object.values(menuByCategory).forEach((list) => list.sort((a, b) => a.price - b.price));
   const categories = Object.keys(menuByCategory).sort((a, b) => (a === "Burgers" ? -1 : b === "Burgers" ? 1 : a.localeCompare(b)));
 
   const addToCart = (item: MenuItem) => {
@@ -108,7 +109,7 @@ export default function CajaTab({
         printOrderTicket({
           num: order.num, customerName, customerPhone, items: cart, total: cartTotal,
           delivery, note, createdAt: order.createdAt,
-          collectLabel: collect?.label, collectAmount: collect?.amount,
+          address, collectLabel: collect?.label, collectAmount: collect?.amount,
         });
       }
       resetForm();

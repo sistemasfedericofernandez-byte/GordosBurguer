@@ -103,7 +103,7 @@ export default function App() {
     printOrderTicket({
       num: order.num, customerName: order.customerName, customerPhone: order.customerPhone,
       items: order.items, total: order.total, delivery: order.delivery, note: order.note, createdAt: order.createdAt,
-      collectLabel: collect?.label, collectAmount: collect?.amount,
+      address: order.delivery_?.address, collectLabel: collect?.label, collectAmount: collect?.amount,
     });
     await reloadAll();
   };
@@ -137,6 +137,7 @@ export default function App() {
       : "*Retira por el local*";
     const shippingLine = isEnvio && shippingCost ? `*Costo del envío:* ${money(shippingValue)}` : "";
     const aliasLine = order.payment !== "efectivo" && settings?.paymentAlias ? `*Alias para transferir:* ${settings.paymentAlias}` : "";
+    const receiptLine = order.payment !== "efectivo" ? "*Importante:* mandanos el comprobante por acá cuando hagas el pago, así confirmamos más rápido." : "";
     const lines = [
       `¡Hola${order.customerName ? " " + order.customerName : ""}! Te confirmamos tu pedido #${order.num} en Gordo's Burger.`,
       "",
@@ -147,6 +148,7 @@ export default function App() {
       shippingLine,
       `*Pago:* ${paymentLabel(order.payment)}`,
       aliasLine,
+      receiptLine,
       `*Total:* ${money(grandTotal)}`,
       order.note ? `*Nota:* ${order.note}` : "",
       "",

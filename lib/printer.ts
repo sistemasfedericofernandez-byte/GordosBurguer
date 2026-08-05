@@ -120,6 +120,7 @@ export type TicketOrder = {
   delivery: string;
   note: string;
   createdAt: string;
+  address?: string;
   collectLabel?: string;
   collectAmount?: number;
 };
@@ -135,6 +136,7 @@ export function ticketLines(order: TicketOrder): { text: string; bold?: boolean;
   if (order.customerName) lines.push({ text: `Cliente: ${order.customerName}` });
   if (order.customerPhone) lines.push({ text: `Tel: ${order.customerPhone}` });
   lines.push({ text: `Entrega: ${order.delivery.toUpperCase()}` });
+  if (order.delivery === "envio" && order.address) lines.push({ text: `Direccion: ${order.address}`, bold: true });
   lines.push({ text: "--------------------------------" });
   for (const it of order.items) lines.push({ text: `${it.qty}x ${it.name}` });
   lines.push({ text: "--------------------------------" });

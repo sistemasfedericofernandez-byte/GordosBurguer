@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { mapsUrlFor } from "@/lib/domain";
 import { mirrorDelivery } from "@/lib/sheets";
 import { getDefaultTariff } from "@/lib/auth";
+import { resolveCadeteId } from "@/lib/cadetes";
 
 export async function GET() {
   const deliveries = await prisma.delivery.findMany({
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
   const delivery = await prisma.delivery.create({
     data: {
       orderId: body.orderId,
-      cadeteId: body.cadeteId || null,
+      cadeteId: await resolveCadeteId(body.cadeteId),
       address,
       mapsUrl: mapsUrlFor(address),
       tariff: typeof body.tariff === "number" ? body.tariff : await getDefaultTariff(),
