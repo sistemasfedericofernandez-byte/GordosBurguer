@@ -140,17 +140,21 @@ export default function PedirClient() {
 
   if (sentOrderNum !== null) {
     return (
-      <div className="pedir-app" style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-        <div className="card" style={{ maxWidth: 420, width: "100%", textAlign: "center" }}>
-          <div style={{ fontSize: 40, marginBottom: 10 }}>✅</div>
-          <h2 style={{ color: "var(--paper)" }}>¡Pedido enviado!</h2>
-          <p className="order-note" style={{ textAlign: "center" }}>
-            Tu pedido <b>#{sentOrderNum}</b> ya está en revisión. Te contactamos en breve para confirmarlo.
+      <div className="pedir-app pedir-success-page">
+        <div className="pedir-success-card">
+          <div className="pedir-success-icon">
+            <svg viewBox="0 0 24 24" className="pedir-success-check" fill="none">
+              <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <h2>¡Pedido enviado!</h2>
+          <div className="pedir-success-num">Pedido #{sentOrderNum}</div>
+          <p className="pedir-success-note">
+            Ya está en revisión — te contactamos en breve para confirmarlo.
           </p>
           {businessWhatsapp ? (
             <a
-              className="send-btn"
-              style={{ display: "block", marginTop: 16, background: "#25D366" }}
+              className="pedir-success-btn"
               href={`${whatsappUrlFor(businessWhatsapp)}?text=${encodeURIComponent(`Hola! Acabo de hacer el pedido #${sentOrderNum}`)}`}
               target="_blank" rel="noopener noreferrer"
             >
