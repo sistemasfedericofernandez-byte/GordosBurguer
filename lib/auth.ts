@@ -14,8 +14,8 @@ export function isValidPin(p: string): boolean {
 
 const DEFAULT_PIN_HASH = simpleHash("1234");
 
-// Vence 7 dias despues de la entrega: 5 de julio de 2026, 22:00
-export const TRIAL_DEADLINE = new Date(2026, 6, 5, 22, 0, 0).getTime();
+// Membresía: 3 meses gratis desde la entrega (4 de agosto de 2026), vence el 4 de noviembre de 2026, 22:00.
+export const TRIAL_DEADLINE = new Date(2026, 10, 4, 22, 0, 0).getTime();
 export const ACTIVATION_HASH = simpleHash("GORDOS-PAGO-2026");
 
 async function getSetting(key: string): Promise<string | null> {

@@ -176,7 +176,19 @@ export default function App() {
   }
 
   if (settings.expired) {
-    return <TrialExpired onActivated={reloadAll} />;
+    return (
+      <div>
+        <TrialExpired onActivated={reloadAll} />
+        <main>
+          <h2 className="display" style={{ color: "var(--mustard)", marginBottom: 4 }}>Historial (solo lectura)</h2>
+          <p className="empty-note" style={{ marginBottom: 14 }}>
+            Podés seguir viendo y exportando todas tus ventas aunque el sistema esté sin activar. No se puede cargar
+            ni editar nada nuevo hasta reactivarlo.
+          </p>
+          <HistorialTab orders={orders} expenses={expenses} closures={closures} reload={reloadAll} />
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -260,7 +272,7 @@ function TrialExpired({ onActivated }: { onActivated: () => void }) {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+    <div style={{ display: "flex", justifyContent: "center", padding: "40px 20px 10px" }}>
       <div className="card" style={{ maxWidth: 420, width: "100%", textAlign: "center" }}>
         <div style={{ fontSize: 36, marginBottom: 6 }}>⏳</div>
         <h2 style={{ color: "var(--paper)", display: "block", textAlign: "center" }}>Período de prueba finalizado</h2>
