@@ -109,7 +109,8 @@ export default function CajaTab({
         printOrderTicket({
           num: order.num, customerName, customerPhone, items: cart, total: cartTotal,
           delivery, note, createdAt: order.createdAt,
-          address, collectLabel: collect?.label, collectAmount: collect?.amount,
+          address, tariff: delivery === "envio" ? parseFloat(tariff) || 0 : undefined,
+          collectLabel: collect?.label, collectAmount: collect?.amount,
         });
       }
       resetForm();
@@ -117,6 +118,17 @@ export default function CajaTab({
     } finally {
       setSending(false);
     }
+  };
+
+  const reprintTicket = (o: Order) => {
+    const collect = o.delivery === "envio" && o.delivery_
+      ? amountToCollect(o, { tariff: o.delivery_.tariff, tariffPaid: o.delivery_.tariffPaid })
+      : null;
+    printOrderTicket({
+      num: o.num, customerName: o.customerName, customerPhone: o.customerPhone,
+      items: o.items, total: o.total, delivery: o.delivery, note: o.note, createdAt: o.createdAt,
+      address: o.delivery_?.address, tariff: o.delivery_?.tariff, collectLabel: collect?.label, collectAmount: collect?.amount,
+    });
   };
 
   const toggleStatus = async (o: Order) => {
@@ -303,6 +315,7 @@ export default function CajaTab({
                 <button className={"small-btn " + (o.status === "pendiente" ? "done" : "undo")} onClick={() => toggleStatus(o)}>
                   {o.status === "pendiente" ? "Marcar listo" : "Reabrir"}
                 </button>
+                <button className="small-btn print" onClick={() => reprintTicket(o)}>Imprimir ticket</button>
                 <button className="small-btn del" onClick={() => askDelete(o.id)}>Eliminar</button>
               </div>
             </div>

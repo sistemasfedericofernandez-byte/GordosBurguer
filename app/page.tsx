@@ -103,7 +103,7 @@ export default function App() {
     printOrderTicket({
       num: order.num, customerName: order.customerName, customerPhone: order.customerPhone,
       items: order.items, total: order.total, delivery: order.delivery, note: order.note, createdAt: order.createdAt,
-      address: order.delivery_?.address, collectLabel: collect?.label, collectAmount: collect?.amount,
+      address: order.delivery_?.address, tariff: order.delivery_?.tariff, collectLabel: collect?.label, collectAmount: collect?.amount,
     });
     await reloadAll();
   };

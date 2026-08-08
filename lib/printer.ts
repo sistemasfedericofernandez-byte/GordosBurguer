@@ -121,6 +121,7 @@ export type TicketOrder = {
   note: string;
   createdAt: string;
   address?: string;
+  tariff?: number;
   collectLabel?: string;
   collectAmount?: number;
 };
@@ -136,13 +137,19 @@ export function ticketLines(order: TicketOrder): { text: string; bold?: boolean;
   if (order.customerName) lines.push({ text: `Cliente: ${order.customerName}` });
   if (order.customerPhone) lines.push({ text: `Tel: ${order.customerPhone}` });
   lines.push({ text: `Entrega: ${order.delivery.toUpperCase()}` });
-  if (order.delivery === "envio" && order.address) lines.push({ text: `Direccion: ${order.address}`, bold: true });
+  if (order.delivery === "envio") {
+    if (order.address) lines.push({ text: `Direccion: ${order.address}`, bold: true });
+    if (typeof order.tariff === "number") lines.push({ text: `Costo de envio: ${money(order.tariff)}` });
+  }
   lines.push({ text: "--------------------------------" });
   for (const it of order.items) lines.push({ text: `${it.qty}x ${it.name}` });
   lines.push({ text: "--------------------------------" });
   lines.push({ text: `TOTAL: ${money(order.total)}`, bold: true });
   if (order.collectLabel) lines.push({ text: order.collectLabel + (order.collectAmount ? `: ${money(order.collectAmount)}` : "") });
   if (order.note) { lines.push({ text: "--------------------------------" }); lines.push({ text: `Nota: ${order.note}` }); }
+  lines.push({ text: "--------------------------------" });
+  lines.push({ text: "Gracias por tu compra!", bold: true, center: true });
+  lines.push({ text: "Que lo disfrutes :)", center: true });
   return lines;
 }
 
