@@ -15,6 +15,10 @@ import {
   setBusinessWhatsapp,
   getPaymentAlias,
   setPaymentAlias,
+  getGymDiscountPercent,
+  setGymDiscountPercent,
+  getGymStaffList,
+  setGymStaffList,
 } from "@/lib/auth";
 
 export async function GET() {
@@ -26,6 +30,8 @@ export async function GET() {
     businessInfo: await getBusinessInfo(),
     businessWhatsapp: await getBusinessWhatsapp(),
     paymentAlias: await getPaymentAlias(),
+    gymDiscountPercent: await getGymDiscountPercent(),
+    gymStaffList: await getGymStaffList(),
   });
 }
 
@@ -66,6 +72,16 @@ export async function PATCH(request: NextRequest) {
 
   if (body.paymentAlias !== undefined) {
     await setPaymentAlias(body.paymentAlias);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (body.gymDiscountPercent !== undefined) {
+    await setGymDiscountPercent(parseFloat(body.gymDiscountPercent) || 0);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (body.gymStaffListRaw !== undefined) {
+    await setGymStaffList(body.gymStaffListRaw);
     return NextResponse.json({ ok: true });
   }
 

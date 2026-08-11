@@ -94,3 +94,32 @@ export async function getPaymentAlias(): Promise<string> {
 export async function setPaymentAlias(value: string): Promise<void> {
   await setSetting("paymentAlias", value);
 }
+
+const DEFAULT_GYM_DISCOUNT_PERCENT = 15;
+
+export async function getGymDiscountPercent(): Promise<number> {
+  const v = await getSetting("gymDiscountPercent");
+  return v ? parseFloat(v) : DEFAULT_GYM_DISCOUNT_PERCENT;
+}
+
+export async function setGymDiscountPercent(value: number): Promise<void> {
+  await setSetting("gymDiscountPercent", String(value));
+}
+
+export type GymStaffMember = { dni: string; name: string };
+
+/** Profes/staff del gimnasio que también tienen el descuento, aunque no pagan cuota
+ * (así que no aparecen en la planilla de Pagos). Se guarda como texto, una persona
+ * por línea: "DNI,Nombre". Editable desde Configuración. */
+export async function getGymStaffList(): Promise<GymStaffMember[]> {
+  const raw = (await getSetting("gymStaffList")) ?? "";
+  return raw
+    .split("\n")
+    .map((line) => line.split(","))
+    .filter(([dni]) => dni && dni.trim())
+    .map(([dni, name]) => ({ dni: dni.trim(), name: (name || "").trim() }));
+}
+
+export async function setGymStaffList(raw: string): Promise<void> {
+  await setSetting("gymStaffList", raw);
+}

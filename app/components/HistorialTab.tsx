@@ -15,13 +15,14 @@ function downloadCsv(filename: string, rows: unknown[][]) {
 }
 
 function orderRows(list: Order[]) {
-  const header = ["Fecha", "Hora", "Numero", "Cliente", "Telefono", "Items", "Pago", "Entrega", "Nota", "Estado", "Total"];
+  const header = ["Fecha", "Hora", "Numero", "Cliente", "Telefono", "Items", "Pago", "Entrega", "Nota", "Estado", "Total", "Descuento", "DNI Cupon"];
   const rows = list.map((o) => [
     o.dateKey,
     new Date(o.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
     o.num, o.customerName || "", o.customerPhone || "",
     o.items.map((it) => `${it.qty}x ${it.name}`).join(" | "),
     paymentLabel(o.payment), deliveryLabel(o.delivery), o.note || "", o.status, o.total,
+    o.discount || 0, o.couponDni || "",
   ]);
   return [header, ...rows];
 }
@@ -32,6 +33,7 @@ export default function HistorialTab({ orders: allOrders, expenses }: { orders: 
 
   const orders = allOrders.filter((o) => o.confirmStatus === "confirmado");
   const allTimeTotals = orders.reduce(accumulate, emptyTotals());
+  const totalDiscount = orders.reduce((s, o) => s + (o.discount || 0), 0);
 
   const byDate: Record<string, Order[]> = {};
   orders.forEach((o) => { (byDate[o.dateKey] ||= []).push(o); });
@@ -52,6 +54,7 @@ export default function HistorialTab({ orders: allOrders, expenses }: { orders: 
         <div className="stat"><div className="label">Pedidos totales</div><div className="value">{allTimeTotals.count}</div></div>
         <div className="stat envio"><div className="label">Envíos</div><div className="value">{allTimeTotals.envio}</div></div>
         <div className="stat"><div className="label">Retira</div><div className="value">{allTimeTotals.retira}</div></div>
+        <div className="stat transferencia"><div className="label">Descuentos Fit Time</div><div className="value">{money(totalDiscount)}</div></div>
       </div>
 
       <div className="hist-controls">

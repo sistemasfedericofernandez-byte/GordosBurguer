@@ -36,6 +36,8 @@ export type Order = {
   source: "staff" | "cliente";
   confirmStatus: "pendiente" | "confirmado" | "rechazado";
   total: number;
+  discount: number;
+  couponDni: string | null;
   items: CartItem[];
   dateKey: string;
   createdAt: string;
@@ -91,4 +93,6 @@ export type Settings = {
   businessInfo: string;
   businessWhatsapp: string;
   paymentAlias: string;
+  gymDiscountPercent: number;
+  gymStaffList: { dni: string; name: string }[];
 };

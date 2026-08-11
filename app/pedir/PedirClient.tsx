@@ -39,6 +39,12 @@ export default function PedirClient() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [sentOrderNum, setSentOrderNum] = useState<number | null>(null);
+  const [couponDni, setCouponDni] = useState("");
+  const [couponStatus, setCouponStatus] = useState<"idle" | "checking" | "ok" | "error">("idle");
+  const [couponMemberName, setCouponMemberName] = useState("");
+  const [couponDiscountPercent, setCouponDiscountPercent] = useState(0);
+  const [couponMessage, setCouponMessage] = useState("");
+  const [couponRejectedReason, setCouponRejectedReason] = useState("");
   const [dragY, setDragY] = useState(0);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const barDragStartY = useRef<number | null>(null);
@@ -84,6 +90,40 @@ export default function PedirClient() {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    const dni = couponDni.trim();
+    if (dni.length < 7) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reacciona a que el usuario borró el DNI
+      setCouponStatus("idle");
+      setCouponMessage("");
+      return;
+    }
+    setCouponStatus("checking");
+    const id = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/coupons/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dni }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          setCouponStatus("ok");
+          setCouponMemberName(data.memberName || "");
+          setCouponDiscountPercent(data.discountPercent || 0);
+          setCouponMessage("");
+        } else {
+          setCouponStatus("error");
+          setCouponMessage(data.message || "No pudimos validar el cupón.");
+        }
+      } catch {
+        setCouponStatus("error");
+        setCouponMessage("No pudimos validar el cupón, probá de nuevo.");
+      }
+    }, 500);
+    return () => clearTimeout(id);
+  }, [couponDni]);
+
   const q = menuSearch.trim().toLowerCase();
   const filteredMenu = q ? menu.filter((m) => m.name.toLowerCase().includes(q) || m.category.toLowerCase().includes(q)) : menu;
   const byCategory: Record<string, MenuItem[]> = {};
@@ -110,6 +150,8 @@ export default function PedirClient() {
   const qtyInCart = (id: string) => cart.find((c) => c.id === id)?.qty || 0;
   const cartTotal = cart.reduce((s, c) => s + c.price * c.qty, 0);
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
+  const couponDiscountAmount = couponStatus === "ok" ? cartTotal * (couponDiscountPercent / 100) : 0;
+  const discountedTotal = cartTotal - couponDiscountAmount;
 
   const canSubmit = cart.length > 0 && customerName.trim() && customerPhone.trim() && (delivery !== "envio" || address.trim());
 
@@ -124,6 +166,7 @@ export default function PedirClient() {
         body: JSON.stringify({
           items: cart, customerName, customerPhone, payment, delivery, note, address,
           source: "cliente",
+          couponDni: couponStatus === "ok" ? couponDni.trim() : undefined,
         }),
       });
       if (!res.ok) {
@@ -132,6 +175,7 @@ export default function PedirClient() {
         return;
       }
       const order = await res.json();
+      setCouponRejectedReason(order.couponRejectedReason || "");
       setSentOrderNum(order.num);
     } finally {
       setSending(false);
@@ -152,6 +196,11 @@ export default function PedirClient() {
           <p className="pedir-success-note">
             Ya está en revisión — te contactamos en breve para confirmarlo.
           </p>
+          {couponRejectedReason && (
+            <p className="empty-note" style={{ textAlign: "center", marginBottom: 10 }}>
+              El cupón de Fit Time no se pudo aplicar (ya se usó este mes), pero tu pedido se envió igual.
+            </p>
+          )}
           {businessWhatsapp ? (
             <a
               className="pedir-success-btn"
@@ -192,10 +241,27 @@ export default function PedirClient() {
             </div>
           ))}
           <div className="pedir-summary-row"><span>Subtotal</span><span>{money(cartTotal)}</span></div>
+          {couponStatus === "ok" && (
+            <div className="pedir-summary-row" style={{ color: "var(--green)" }}>
+              <span>Descuento socio Fit Time</span><span>-{money(couponDiscountAmount)}</span>
+            </div>
+          )}
           <div className="pedir-summary-row"><span>Envío</span><span>{delivery === "envio" ? "A coordinar" : "—"}</span></div>
-          <div className="pedir-summary-row total"><span>Total</span><span>{money(cartTotal)}</span></div>
+          <div className="pedir-summary-row total"><span>Total</span><span>{money(discountedTotal)}</span></div>
 
           <div style={{ marginTop: 16 }}>
+            <label className="field-label">¿Sos socio de Fit Time? Ingresá tu DNI (opcional)</label>
+            <input type="text" inputMode="numeric" placeholder="Ej: 30123456" value={couponDni} onChange={(e) => setCouponDni(e.target.value)} />
+            {couponStatus === "checking" && <p className="empty-note">Verificando...</p>}
+            {couponStatus === "ok" && (
+              <p className="order-note" style={{ color: "var(--green)" }}>
+                ✓ {couponDiscountPercent}% off aplicado, hola {couponMemberName || "!"}
+              </p>
+            )}
+            {couponStatus === "error" && (
+              <p className="order-note" style={{ color: "var(--red)" }}>{couponMessage}</p>
+            )}
+
             <label className="field-label">Tu nombre</label>
             <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
             <label className="field-label">Tu teléfono</label>
@@ -227,7 +293,7 @@ export default function PedirClient() {
             {error && <p className="order-note" style={{ color: "var(--red)" }}>{error}</p>}
 
             <button className="send-btn" disabled={!canSubmit || sending} onClick={submitOrder}>
-              {sending ? "Enviando..." : `Enviar pedido · ${money(cartTotal)}`}
+              {sending ? "Enviando..." : `Enviar pedido · ${money(discountedTotal)}`}
             </button>
           </div>
         </>
@@ -321,7 +387,7 @@ export default function PedirClient() {
           onPointerCancel={onBarPointerUp}
         >
           <span>🛒 {cartCount} {cartCount === 1 ? "ítem" : "ítems"}</span>
-          <span>{money(cartTotal)} · Ver carrito ›</span>
+          <span>{money(discountedTotal)} · Ver carrito ›</span>
         </button>
       )}
 

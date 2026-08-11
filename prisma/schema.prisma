@@ -35,6 +35,9 @@ model Order {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   delivery_    Delivery?
+  couponDni    String?
+  discount     Float     @default(0)
+  couponUse_   CouponUse?
 
   @@map("orders")
 }
@@ -100,4 +103,17 @@ model Setting {
   value String
 
   @@map("settings")
+}
+
+model CouponUse {
+  id        String   @id @default(cuid())
+  dni       String
+  monthKey  String // "YYYY-MM"
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  discount  Float
+  createdAt DateTime @default(now())
+
+  @@unique([dni, monthKey])
+  @@map("coupon_uses")
 }

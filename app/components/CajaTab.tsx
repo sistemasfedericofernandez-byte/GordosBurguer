@@ -127,7 +127,9 @@ export default function CajaTab({
     printOrderTicket({
       num: o.num, customerName: o.customerName, customerPhone: o.customerPhone,
       items: o.items, total: o.total, delivery: o.delivery, note: o.note, createdAt: o.createdAt,
-      address: o.delivery_?.address, tariff: o.delivery_?.tariff, collectLabel: collect?.label, collectAmount: collect?.amount,
+      address: o.delivery_?.address, tariff: o.delivery_?.tariff,
+      discount: o.discount, couponDni: o.couponDni,
+      collectLabel: collect?.label, collectAmount: collect?.amount,
     });
   };
 

@@ -122,6 +122,8 @@ export type TicketOrder = {
   createdAt: string;
   address?: string;
   tariff?: number;
+  discount?: number;
+  couponDni?: string | null;
   collectLabel?: string;
   collectAmount?: number;
 };
@@ -144,6 +146,7 @@ export function ticketLines(order: TicketOrder): { text: string; bold?: boolean;
   lines.push({ text: "--------------------------------" });
   for (const it of order.items) lines.push({ text: `${it.qty}x ${it.name}` });
   lines.push({ text: "--------------------------------" });
+  if (order.discount) lines.push({ text: `Descuento socio Fit Time (${order.couponDni || ""}): -${money(order.discount)}` });
   lines.push({ text: `TOTAL: ${money(order.total)}`, bold: true });
   if (order.collectLabel) lines.push({ text: order.collectLabel + (order.collectAmount ? `: ${money(order.collectAmount)}` : "") });
   if (order.note) { lines.push({ text: "--------------------------------" }); lines.push({ text: `Nota: ${order.note}` }); }

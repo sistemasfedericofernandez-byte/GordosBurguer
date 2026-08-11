@@ -17,6 +17,12 @@ export default function ConfigTab({ settings, reload }: { settings: Settings; re
   const [businessWhatsappMsg, setBusinessWhatsappMsg] = useState("");
   const [paymentAlias, setPaymentAlias] = useState(settings.paymentAlias || "");
   const [paymentAliasMsg, setPaymentAliasMsg] = useState("");
+  const [gymDiscountPercent, setGymDiscountPercent] = useState(String(settings.gymDiscountPercent ?? 15));
+  const [gymDiscountMsg, setGymDiscountMsg] = useState("");
+  const [gymStaffListRaw, setGymStaffListRaw] = useState(
+    (settings.gymStaffList || []).map((m) => `${m.dni},${m.name}`).join("\n")
+  );
+  const [gymStaffMsg, setGymStaffMsg] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
   const [printerConnected, setPrinterConnected] = useState(false);
   const [printerMsg, setPrinterMsg] = useState("");
@@ -68,6 +74,18 @@ export default function ConfigTab({ settings, reload }: { settings: Settings; re
   const savePaymentAlias = async () => {
     await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentAlias }) });
     setPaymentAliasMsg("Alias guardado.");
+    await reload();
+  };
+
+  const saveGymDiscountPercent = async () => {
+    await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ gymDiscountPercent: parseFloat(gymDiscountPercent) || 0 }) });
+    setGymDiscountMsg("Porcentaje guardado.");
+    await reload();
+  };
+
+  const saveGymStaffList = async () => {
+    await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ gymStaffListRaw }) });
+    setGymStaffMsg("Lista guardada.");
     await reload();
   };
 
@@ -130,6 +148,33 @@ export default function ConfigTab({ settings, reload }: { settings: Settings; re
         <input type="text" placeholder="Ej: gordosburger.mp" value={paymentAlias} onChange={(e) => setPaymentAlias(e.target.value)} />
         <button className="send-btn" style={{ marginTop: 10 }} onClick={savePaymentAlias}>Guardar alias</button>
         {paymentAliasMsg && <p className="order-note">{paymentAliasMsg}</p>}
+      </div>
+
+      <div className="card">
+        <h2>Descuento socios Fit Time</h2>
+        <p className="empty-note">
+          Los socios de Fit Time con la cuota al día pueden usar su DNI como cupón en{" "}
+          <code>/pedir</code>, una vez por mes, y llevarse este porcentaje de descuento
+          sobre el subtotal de productos (no incluye envío). Se valida en vivo contra la
+          planilla de pagos del gimnasio.
+        </p>
+        <label className="field-label">Porcentaje de descuento</label>
+        <input type="number" value={gymDiscountPercent} onChange={(e) => setGymDiscountPercent(e.target.value)} />
+        <button className="send-btn" style={{ marginTop: 10 }} onClick={saveGymDiscountPercent}>Guardar porcentaje</button>
+        {gymDiscountMsg && <p className="order-note">{gymDiscountMsg}</p>}
+
+        <label className="field-label" style={{ marginTop: 16 }}>
+          Profes exceptuados (no pagan cuota, así que no están en la planilla de pagos)
+        </label>
+        <p className="empty-note">Una persona por línea, formato: DNI,Nombre</p>
+        <textarea
+          value={gymStaffListRaw}
+          onChange={(e) => setGymStaffListRaw(e.target.value)}
+          placeholder={"30123456,Juan Pérez\n29876543,María López"}
+          style={{ minHeight: 90 }}
+        />
+        <button className="send-btn" style={{ marginTop: 10 }} onClick={saveGymStaffList}>Guardar profes</button>
+        {gymStaffMsg && <p className="order-note">{gymStaffMsg}</p>}
       </div>
 
       <div className="card">
