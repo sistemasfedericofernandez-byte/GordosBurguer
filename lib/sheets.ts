@@ -1,4 +1,5 @@
 import { google, sheets_v4 } from "googleapis";
+import { createHash } from "crypto";
 import { paymentLabel, deliveryLabel } from "@/lib/domain";
 
 const TABS = {
@@ -47,6 +48,7 @@ function getSheetsClient(): Promise<sheets_v4.Sheets> {
       rawFirst20: key.slice(0, 20),
       rawLast20: key.slice(-20),
       rawCharCodesStart: [...key.slice(0, 5)].map((c) => c.charCodeAt(0)),
+      normalizedSha256: createHash("sha256").update(normalized).digest("hex"),
     });
     const auth = new google.auth.JWT({
       email,
