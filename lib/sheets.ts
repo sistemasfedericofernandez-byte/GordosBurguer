@@ -19,6 +19,17 @@ function getSpreadsheetId(): string | null {
   return process.env.GOOGLE_SHEET_ID || null;
 }
 
+// Normaliza la clave privada sin importar cómo haya quedado pegada (con \n literal,
+// con saltos de línea reales, con CRLF de Windows, o con comillas de sobra) — el
+// decoder de OpenSSL es muy estricto con el formato PEM y falla en silencio (o con
+// errores crípticos tipo "DECODER routines::unsupported") ante cualquier variante rara.
+function normalizePrivateKey(raw: string): string {
+  let key = raw.trim();
+  if (key.startsWith('"') && key.endsWith('"')) key = key.slice(1, -1);
+  key = key.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  return key.trim() + "\n";
+}
+
 function getSheetsClient(): Promise<sheets_v4.Sheets> {
   if (!sheetsClientPromise) {
     const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
@@ -26,7 +37,7 @@ function getSheetsClient(): Promise<sheets_v4.Sheets> {
     if (!email || !key) throw new Error("Faltan credenciales de Google Sheets");
     const auth = new google.auth.JWT({
       email,
-      key: key.replace(/\\n/g, "\n"),
+      key: normalizePrivateKey(key),
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
     sheetsClientPromise = Promise.resolve(google.sheets({ version: "v4", auth }));
@@ -285,9 +296,6 @@ export async function getMenuFromSheet(): Promise<MenuItemLike[] | null> {
 
 export type GymPaymentRow = { dni: string; name: string; nextDueDate: string; daysRemaining: number };
 
-// TEMP: guarda el último error de lectura para diagnosticar en producción. Sacar después.
-export let lastGymSheetError: string | null = null;
-
 /**
  * Lee el historial de pagos del gimnasio (planilla propia del gimnasio, no la nuestra —
  * es de solo lectura, nunca le escribimos nada). Es un registro de pagos, no un padrón:
@@ -314,7 +322,6 @@ export async function getGymPaymentsFromSheet(): Promise<GymPaymentRow[] | null>
       }));
   } catch (err) {
     console.error("No se pudo leer los pagos del gimnasio desde Google Sheets:", err);
-    lastGymSheetError = err instanceof Error ? err.message : String(err);
     return null;
   }
 }
