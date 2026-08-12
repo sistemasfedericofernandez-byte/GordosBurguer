@@ -285,6 +285,9 @@ export async function getMenuFromSheet(): Promise<MenuItemLike[] | null> {
 
 export type GymPaymentRow = { dni: string; name: string; nextDueDate: string; daysRemaining: number };
 
+// TEMP: guarda el último error de lectura para diagnosticar en producción. Sacar después.
+export let lastGymSheetError: string | null = null;
+
 /**
  * Lee el historial de pagos del gimnasio (planilla propia del gimnasio, no la nuestra —
  * es de solo lectura, nunca le escribimos nada). Es un registro de pagos, no un padrón:
@@ -311,6 +314,7 @@ export async function getGymPaymentsFromSheet(): Promise<GymPaymentRow[] | null>
       }));
   } catch (err) {
     console.error("No se pudo leer los pagos del gimnasio desde Google Sheets:", err);
+    lastGymSheetError = err instanceof Error ? err.message : String(err);
     return null;
   }
 }
