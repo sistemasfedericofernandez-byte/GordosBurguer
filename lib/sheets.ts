@@ -1,5 +1,4 @@
 import { google, sheets_v4 } from "googleapis";
-import { createHash } from "crypto";
 import { paymentLabel, deliveryLabel } from "@/lib/domain";
 
 const TABS = {
@@ -36,23 +35,9 @@ function getSheetsClient(): Promise<sheets_v4.Sheets> {
     const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
     const key = process.env.GOOGLE_PRIVATE_KEY;
     if (!email || !key) throw new Error("Faltan credenciales de Google Sheets");
-    const normalized = normalizePrivateKey(key);
-    // TEMP: diagnóstico, sacar después. No expone la clave, solo forma/longitud.
-    const lines = normalized.split("\n");
-    lastGymSheetKeyInfo = JSON.stringify({
-      rawLen: key.length,
-      normLen: normalized.length,
-      lineCount: lines.length,
-      firstLine: lines[0],
-      lastNonEmptyLine: [...lines].reverse().find((l) => l.trim()),
-      rawFirst20: key.slice(0, 20),
-      rawLast20: key.slice(-20),
-      rawCharCodesStart: [...key.slice(0, 5)].map((c) => c.charCodeAt(0)),
-      normalizedSha256: createHash("sha256").update(normalized).digest("hex"),
-    });
     const auth = new google.auth.JWT({
       email,
-      key: normalized,
+      key: normalizePrivateKey(key),
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
     sheetsClientPromise = Promise.resolve(google.sheets({ version: "v4", auth }));
@@ -311,10 +296,6 @@ export async function getMenuFromSheet(): Promise<MenuItemLike[] | null> {
 
 export type GymPaymentRow = { dni: string; name: string; nextDueDate: string; daysRemaining: number };
 
-// TEMP: guarda el último error de lectura para diagnosticar en producción. Sacar después.
-export let lastGymSheetError: string | null = null;
-export let lastGymSheetKeyInfo: string | null = null;
-
 /**
  * Lee el historial de pagos del gimnasio (planilla propia del gimnasio, no la nuestra —
  * es de solo lectura, nunca le escribimos nada). Es un registro de pagos, no un padrón:
@@ -341,7 +322,6 @@ export async function getGymPaymentsFromSheet(): Promise<GymPaymentRow[] | null>
       }));
   } catch (err) {
     console.error("No se pudo leer los pagos del gimnasio desde Google Sheets:", err);
-    lastGymSheetError = err instanceof Error ? err.message : String(err);
     return null;
   }
 }
