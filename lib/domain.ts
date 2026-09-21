@@ -57,8 +57,27 @@ export function money(n: number): string {
   return "$" + Math.round(n).toLocaleString("es-AR");
 }
 
+const BUSINESS_TZ = "America/Argentina/Buenos_Aires";
+// El "día" del negocio arranca a las 6 AM (hora Argentina), no a medianoche: el local atiende de
+// noche (20 a 00 hs, a veces unos minutos pasada la medianoche) y todo ese turno tiene que quedar
+// en el mismo día. Argentina no tiene horario de verano, así que restar horas es exacto.
+const BUSINESS_DAY_START_HOUR = 6;
+
+/** Día del negocio ("YYYY-MM-DD", hora Argentina, corte a las 6 AM) al que pertenece un instante. */
+export function businessDateKey(date: Date = new Date()): string {
+  const shifted = new Date(date.getTime() - BUSINESS_DAY_START_HOUR * 3600 * 1000);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: BUSINESS_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(shifted);
+  const get = (t: string) => parts.find((p) => p.type === t)!.value;
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
 export function todayKey(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessDateKey();
 }
 
 export function fmtDate(key: string): string {

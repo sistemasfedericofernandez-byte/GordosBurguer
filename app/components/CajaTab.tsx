@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Order, MenuItem, Expense, Closure, Cadete, Settings, CartItem } from "@/lib/types";
-import { money, todayKey, emptyTotals, accumulate, paymentLabel, deliveryLabel, amountToCollect } from "@/lib/domain";
+import { money, todayKey, fmtDate, emptyTotals, accumulate, paymentLabel, deliveryLabel, amountToCollect } from "@/lib/domain";
 import { printOrderTicket } from "@/lib/printer";
 
 export default function CajaTab({
@@ -28,11 +28,16 @@ export default function CajaTab({
   const [pinValue, setPinValue] = useState("");
   const [pinError, setPinError] = useState("");
 
+  const [showClosedOrders, setShowClosedOrders] = useState(false);
+
   const today = todayKey();
   const todayOrders = orders.filter((o) => o.dateKey === today && o.confirmStatus === "confirmado").sort((a, b) => b.num - a.num);
-  const todayTotals = todayOrders.reduce(accumulate, emptyTotals());
   const todayClosure = closures.find((c) => c.dateKey === today);
   const isClosed = !!todayClosure;
+  // Con la caja cerrada, los contadores en vivo quedan en cero (como un cierre Z de una caja
+  // registradora): lo vendido en el día pasa a verse en el resumen del cierre de más abajo.
+  const todayTotals = isClosed ? emptyTotals() : todayOrders.reduce(accumulate, emptyTotals());
+  const listOrders = isClosed && !showClosedOrders ? [] : todayOrders;
 
   const q = menuSearch.trim().toLowerCase();
   const filteredMenu = q
@@ -192,7 +197,7 @@ export default function CajaTab({
           <>
             <div className="closure-info">
               <b>Caja cerrada</b> a las {new Date(todayClosure!.closedAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
-              {todayClosure!.closedBy && <> por {todayClosure!.closedBy}</>}. Efectivo neto: <b>{money(todayClosure!.totals.efectivoNeto)}</b>
+              {todayClosure!.closedBy && <> por {todayClosure!.closedBy}</>}. Los contadores quedaron en cero; para seguir vendiendo reabrí la caja.
             </div>
             <button className="export-btn" onClick={reopenCaja}>Reabrir caja</button>
           </>
@@ -203,6 +208,27 @@ export default function CajaTab({
           </>
         )}
       </div>
+
+      {isClosed && todayClosure && (
+        <div className="card cierre-resumen" style={{ marginBottom: 16 }}>
+          <h2>Resumen del cierre — {fmtDate(todayClosure.dateKey)}</h2>
+          <div className="cierre-total">
+            <span className="label">Vendido en el día</span>
+            <span className="value">{money(todayClosure.totals.total)}</span>
+          </div>
+          <div className="stats-row" style={{ marginTop: 12, marginBottom: 0 }}>
+            <div className="stat efectivo"><div className="label">Efectivo</div><div className="value">{money(todayClosure.totals.efectivo)}</div></div>
+            <div className="stat mp"><div className="label">Mercado Pago</div><div className="value">{money(todayClosure.totals.mercadopago)}</div></div>
+            <div className="stat transferencia"><div className="label">Transferencia</div><div className="value">{money(todayClosure.totals.transferencia)}</div></div>
+            <div className="stat"><div className="label">Pedidos</div><div className="value">{todayClosure.totals.count}</div></div>
+            <div className="stat envio"><div className="label">Envíos</div><div className="value">{todayClosure.totals.envio}</div></div>
+            <div className="stat gasto"><div className="label">Compras</div><div className="value">{money(todayClosure.totals.gastos)}</div></div>
+          </div>
+          <p className="order-note" style={{ marginTop: 10 }}>
+            Efectivo neto del día (efectivo − compras en efectivo): <b>{money(todayClosure.totals.efectivoNeto)}</b>
+          </p>
+        </div>
+      )}
 
       <div className="caja-grid">
         <div className="card">
@@ -295,9 +321,20 @@ export default function CajaTab({
         </div>
 
         <div className="card">
-          <h2>Pedidos de hoy ({todayOrders.length})</h2>
-          {todayOrders.length === 0 && <p className="empty-note">Todavía no hay pedidos hoy.</p>}
-          {todayOrders.map((o) => (
+          <h2>Pedidos de hoy ({isClosed ? 0 : todayOrders.length})</h2>
+          {isClosed ? (
+            <>
+              <p className="empty-note">
+                Caja cerrada: los {todayOrders.length} pedido(s) del día quedaron guardados en el Historial.
+              </p>
+              <button className="export-btn" style={{ marginTop: 8 }} onClick={() => setShowClosedOrders((v) => !v)}>
+                {showClosedOrders ? "Ocultar pedidos del cierre" : "Ver pedidos del cierre"}
+              </button>
+            </>
+          ) : (
+            todayOrders.length === 0 && <p className="empty-note">Todavía no hay pedidos hoy.</p>
+          )}
+          {listOrders.map((o) => (
             <div className="order-row" key={o.id}>
               <div className="order-top">
                 <div>

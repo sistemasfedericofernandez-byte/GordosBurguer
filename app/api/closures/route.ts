@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
   if (existing) return NextResponse.json({ error: "La caja de hoy ya está cerrada." }, { status: 400 });
 
   const [orders, expenses] = await Promise.all([
-    prisma.order.findMany({ where: { dateKey } }),
+    // Solo pedidos confirmados: los rechazados y los que todavía esperan confirmación no son ventas.
+    prisma.order.findMany({ where: { dateKey, confirmStatus: "confirmado" } }),
     prisma.expense.findMany({ where: { dateKey } }),
   ]);
   const totals = orders.reduce(accumulate, emptyTotals());

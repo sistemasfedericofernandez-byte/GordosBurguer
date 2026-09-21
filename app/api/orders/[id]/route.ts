@@ -2,6 +2,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { mirrorOrder, mirrorOrderDeleted } from "@/lib/sheets";
 import { checkPin } from "@/lib/auth";
+import { todayKey } from "@/lib/domain";
 
 type CartItem = { id?: string; name: string; price: number; qty: number };
 
@@ -13,12 +14,24 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<"/api/orders
 
   const data: Record<string, unknown> = {};
   if (body.status !== undefined) data.status = body.status;
-  if (body.confirmStatus !== undefined) data.confirmStatus = body.confirmStatus;
+  if (body.confirmStatus !== undefined) {
+    data.confirmStatus = body.confirmStatus;
+    // Un pedido de la página web cuenta como venta el día que el local lo CONFIRMA, no el día
+    // que el cliente lo mandó (puede haberlo pedido de madrugada o en un día ya cerrado).
+    if (body.confirmStatus === "confirmado" && existing.confirmStatus !== "confirmado") data.dateKey = todayKey();
+  }
   if (body.rejectReason !== undefined) data.note = existing.note ? `${existing.note}\nMotivo rechazo: ${body.rejectReason}` : `Motivo rechazo: ${body.rejectReason}`;
   if (body.items !== undefined) {
     const items: CartItem[] = body.items;
+    const subtotal = items.reduce((s, it) => s + it.price * it.qty, 0);
+    // Si el pedido tenía descuento de socio, se mantiene el mismo porcentaje sobre el subtotal nuevo
+    // (antes se perdía: el total quedaba sin descuento pero el campo `discount` seguía cargado).
+    const oldSubtotal = existing.total + existing.discount;
+    const pct = existing.discount > 0 && oldSubtotal > 0 ? existing.discount / oldSubtotal : 0;
+    const discount = subtotal * pct;
     data.items = items;
-    data.total = items.reduce((s, it) => s + it.price * it.qty, 0);
+    data.discount = discount;
+    data.total = subtotal - discount;
   }
   if (body.customerName !== undefined) data.customerName = body.customerName;
   if (body.customerPhone !== undefined) data.customerPhone = body.customerPhone;

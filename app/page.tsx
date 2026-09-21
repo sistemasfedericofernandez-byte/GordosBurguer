@@ -7,12 +7,13 @@ import { playBeep, unlockAudio } from "@/lib/beep";
 import { printOrderTicket } from "@/lib/printer";
 import CajaTab from "@/app/components/CajaTab";
 import HistorialTab from "@/app/components/HistorialTab";
+import AcumuladoTab from "@/app/components/AcumuladoTab";
 import ComprasTab from "@/app/components/ComprasTab";
 import EnviosTab from "@/app/components/EnviosTab";
 import MenuTab from "@/app/components/MenuTab";
 import ConfigTab from "@/app/components/ConfigTab";
 
-type View = "caja" | "historial" | "compras" | "envios" | "menu" | "config";
+type View = "caja" | "historial" | "acumulado" | "compras" | "envios" | "menu" | "config";
 
 export default function App() {
   const [view, setView] = useState<View>("caja");
@@ -209,6 +210,7 @@ export default function App() {
             Caja de hoy{pendingClientOrders.length > 0 && ` 🔴${pendingClientOrders.length}`}
           </button>
           <button className={"tab" + (view === "historial" ? " active" : "")} onClick={() => setView("historial")}>Historial ventas</button>
+          <button className={"tab" + (view === "acumulado" ? " active" : "")} onClick={() => setView("acumulado")}>Total acumulado</button>
           <button className={"tab" + (view === "compras" ? " active" : "")} onClick={() => setView("compras")}>Compras / Insumos</button>
           <button className={"tab" + (view === "envios" ? " active" : "")} onClick={() => setView("envios")}>Envíos</button>
           <button className={"tab" + (view === "menu" ? " active" : "")} onClick={() => setView("menu")}>Menú</button>
@@ -248,6 +250,7 @@ export default function App() {
           <CajaTab orders={orders} menu={menu} expenses={expenses} closures={closures} cadetes={cadetes} settings={settings} reload={reloadAll} />
         )}
         {view === "historial" && <HistorialTab orders={orders} expenses={expenses} closures={closures} reload={reloadAll} />}
+        {view === "acumulado" && <AcumuladoTab orders={orders} expenses={expenses} />}
         {view === "compras" && <ComprasTab expenses={expenses} closures={closures} reload={reloadAll} />}
         {view === "envios" && <EnviosTab deliveries={deliveries} cadetes={cadetes} reload={reloadAll} />}
         {view === "menu" && <MenuTab menu={menu} reload={reloadAll} />}
