@@ -4,14 +4,17 @@ import { Pool } from "pg";
  * Consulta de SOLO LECTURA al sistema de gestión de Fit Time (su propia base Postgres) para saber si un
  * DNI es un alumno con la cuota vigente. Reemplaza a la planilla de Google del sistema viejo.
  *
- * Regla de "vigente" = la misma que usa Fit Time para dejar entrar a un alumno (ver
- * obtenerEstadoCuota en su asistencia.actions.ts): se mira el ÚLTIMO pago del alumno y tiene que
- * faltar más de 0 días para su vencimiento (el día del vencimiento ya cuenta como vencido). No se
- * usa el campo `estado` del alumno porque en Fit Time no se actualiza solo (queda "ACTIVO" aunque la
- * cuota ya venció). Los alumnos "privados" (entrenamiento personalizado de un admin) y los INACTIVOS
- * quedan afuera, igual que en sus listados y reportes.
+ * Se conecta con un usuario Postgres de solo lectura (hamburgueseria_ro) que únicamente puede leer la
+ * vista externo.alumnos_vigencia del lado de Fit Time: DNI, nombre de pila y días restantes de cuota.
+ * No ve teléfonos, fechas de nacimiento, montos ni ninguna otra tabla, y no puede escribir nada.
  *
- * Requiere FITTIME_DATABASE_URL. Idealmente un usuario de SOLO LECTURA limitado a esas tablas.
+ * La regla de "vigente" vive en esa vista y es la misma que usa Fit Time para dejar entrar a un alumno
+ * (obtenerEstadoCuota en su asistencia.actions.ts): se mira el ÚLTIMO pago del alumno y tiene que faltar
+ * más de 0 días para su vencimiento (el día del vencimiento ya cuenta como vencido). No se usa el campo
+ * "estado" del alumno porque en Fit Time no se actualiza solo. Quedan afuera los alumnos "privados"
+ * (entrenamiento personalizado de un admin) y los INACTIVOS, igual que en sus listados y reportes.
+ *
+ * Requiere FITTIME_DATABASE_URL (connection string de ese usuario de solo lectura).
  */
 
 let pool: Pool | null = null;
@@ -54,16 +57,7 @@ export async function findGymMemberByDni(rawDni: string): Promise<GymLookup> {
 
   try {
     const res = await db.query<{ nombre: string; dias: number | null }>(
-      `SELECT a.nombre,
-              (up."fechaVencimiento"::date - (now() AT TIME ZONE 'America/Argentina/Buenos_Aires')::date)::int AS dias
-         FROM alumnos a
-         LEFT JOIN LATERAL (
-                SELECT "fechaVencimiento" FROM pagos p
-                 WHERE p."alumnoId" = a.id
-                 ORDER BY "fechaVencimiento" DESC LIMIT 1
-              ) up ON true
-        WHERE a.dni = $1 AND a.privado = false AND a.estado <> 'INACTIVO'
-        LIMIT 1`,
+      `SELECT nombre, dias_restantes AS dias FROM externo.alumnos_vigencia WHERE dni = $1 LIMIT 1`,
       [dni],
     );
     if (res.rows.length === 0) return { status: "not_found" };
