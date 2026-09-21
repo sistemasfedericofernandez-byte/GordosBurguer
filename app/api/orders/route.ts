@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     const result = await checkCoupon(couponDni);
     if (result.ok) {
       discount = subtotal * (result.discountPercent / 100);
-      appliedCouponDni = couponDni;
+      appliedCouponDni = result.dni; // DNI normalizado (solo dígitos), es la clave del límite mensual
     } else {
       couponRejectedReason = result.reason;
     }

@@ -155,8 +155,8 @@ export default function ConfigTab({ settings, reload }: { settings: Settings; re
         <p className="empty-note">
           Los socios de Fit Time con la cuota al día pueden usar su DNI como cupón en{" "}
           <code>/pedir</code>, una vez por mes, y llevarse este porcentaje de descuento
-          sobre el subtotal de productos (no incluye envío). Se valida en vivo contra la
-          planilla de pagos del gimnasio.
+          sobre el subtotal de productos (no incluye envío). Se valida en vivo contra el sistema de
+          gestión de Fit Time (cuota vigente).
         </p>
         <label className="field-label">Porcentaje de descuento</label>
         <input type="number" value={gymDiscountPercent} onChange={(e) => setGymDiscountPercent(e.target.value)} />

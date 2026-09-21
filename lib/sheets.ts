@@ -293,35 +293,3 @@ export async function getMenuFromSheet(): Promise<MenuItemLike[] | null> {
     return null;
   }
 }
-
-export type GymPaymentRow = { dni: string; name: string; nextDueDate: string; daysRemaining: number };
-
-/**
- * Lee el historial de pagos del gimnasio (planilla propia del gimnasio, no la nuestra —
- * es de solo lectura, nunca le escribimos nada). Es un registro de pagos, no un padrón:
- * puede haber varias filas por DNI (una por cada pago mensual); el caller debe quedarse
- * con la última fila de cada DNI para saber el estado vigente.
- * Columnas esperadas en la pestaña "Pagos": A=Fecha, B=Apellido y nombre, C=DNI,
- * D=Medio de pago, E=Notas, F=Membresia, G=Proximo pago, H=Dias restantes, I=Horario, J=Monto.
- * Devuelve null si GYM_SHEET_ID no está configurado o la lectura falla.
- */
-export async function getGymPaymentsFromSheet(): Promise<GymPaymentRow[] | null> {
-  const spreadsheetId = process.env.GYM_SHEET_ID || null;
-  if (!spreadsheetId) return null;
-  try {
-    const sheets = await getSheetsClient();
-    const res = await sheets.spreadsheets.values.get({ spreadsheetId, range: "Pagos!A2:J20000" });
-    const rows = res.data.values || [];
-    return rows
-      .filter((r) => r[2] && String(r[2]).trim())
-      .map((r) => ({
-        dni: String(r[2]).trim(),
-        name: r[1] || "",
-        nextDueDate: r[6] || "",
-        daysRemaining: parseInt(r[7], 10),
-      }));
-  } catch (err) {
-    console.error("No se pudo leer los pagos del gimnasio desde Google Sheets:", err);
-    return null;
-  }
-}
