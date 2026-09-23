@@ -31,9 +31,9 @@ export const EXPENSE_CATEGORIES = [
 ];
 
 export const DEFAULT_MENU = [
-  { category: "Burgers", name: "Burguer Classic + Papas", price: 4500, desc: "Pan de papa, medallón de carne 100g, lechuga, tomate, queso dambo, aderezo." },
-  { category: "Burgers", name: "Burguer Especial + Papas", price: 6000, desc: "Pan de papa, medallón de carne 100g, lechuga, tomate, huevo, aderezo." },
-  { category: "Burgers", name: "Burguer Cheese + Papas", price: 4000, desc: "Pan de papa, medallón de carne 100g, queso cheddar, aderezo." },
+  { category: "Burgers", name: "Burguer Classic + Papas", price: 5500, desc: "Pan de papa, medallón de carne 100g, lechuga, tomate, queso dambo, aderezo." },
+  { category: "Burgers", name: "Burguer Especial + Papas", price: 7000, desc: "Pan de papa, medallón de carne 100g, lechuga, tomate, huevo, aderezo." },
+  { category: "Burgers", name: "Burguer Cheese + Papas", price: 5000, desc: "Pan de papa, medallón de carne 100g, queso cheddar, aderezo." },
   { category: "Burgers", name: "Burguer Bacon + Papas", price: 5000, desc: "Pan de papa, medallón de carne 100g, queso cheddar, panceta, aderezo." },
   { category: "Burgers", name: "\"Paro Cardíaco\" + Papas", price: 8500, desc: "Pan de papa, doble medallón de carne 100g c/u, doble cheddar, panceta crocante, cebolla caramelizada, aderezo." },
   { category: "Burgers", name: "\"Triple Bypass\" + Papas", price: 10000, desc: "Pan de papa, triple medallón de carne 100g c/u, queso cheddar, panceta, huevo, alioli de ajo." },
